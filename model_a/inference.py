@@ -36,7 +36,7 @@ class FashionPredictor:
             checkpoint_path = config.CHECKPOINT_DIR / 'best.pth'
         
         if Path(checkpoint_path).exists():
-            checkpoint = torch.load(checkpoint_path, map_location=self.device)
+            checkpoint = torch.load(checkpoint_path, map_location=self.device, weights_only=False)
             self.model.load_state_dict(checkpoint['model_state_dict'])
             print(f"✅ 載入模型: {checkpoint_path}")
         else:
