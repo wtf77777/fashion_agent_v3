@@ -35,23 +35,8 @@ class ModelAAdapter:
 
         # 模型權重路徑
         # 優先尋找最佳模型
-        checkpoint_dir = BASE_DIR / "model_a" / "output" / "checkpoints"
-        checkpoint_path = checkpoint_dir / "best.pth"
+        checkpoint_path = BASE_DIR / "model_a" / "output" / "checkpoints" / "best.pth"
         
-        # 檢查是否需要合併檔案 (針對 GitHub 上傳限制)
-        if not checkpoint_path.exists():
-            parts = sorted(checkpoint_dir.glob("best.pth.part*"))
-            if parts:
-                logger.info(f"🧩 Found {len(parts)} parts, merging model...")
-                try:
-                    with open(checkpoint_path, 'wb') as outfile:
-                        for part in parts:
-                            with open(part, 'rb') as infile:
-                                outfile.write(infile.read())
-                    logger.info("✅ Model merged successfully.")
-                except Exception as e:
-                    logger.error(f"❌ Failed to merge model parts: {e}")
-
         if checkpoint_path.exists():
             try:
                 # 載入模型 (這裡會自動使用 GPU 或 CPU)
@@ -122,11 +107,13 @@ class ModelAAdapter:
         # 屬性 (Attributes)
         attributes = [attr['name'] for attr in raw_result['attributes']]
         
-        # 顏色 (Colors) - 只取前 2 個主要顏色的 Hex
-        colors = [c['hex'] for c in raw_result['colors'][:2]]
+        # 顏色 (Colors) - 只取前 1 個主要顏色的中文名稱
+        color_hex = raw_result['colors'][0]['hex'] if raw_result['colors'] else "#000000"
+        color_name = self._get_color_name(color_hex)
         
         # 風格 (Style)
-        style = raw_result['style_tags']
+        style_list = [self._translate_style(s) for s in raw_result['style_tags']]
+        style = style_list[0] if style_list else "休閒"
         
         # 擴充屬性：如果信心度夠高，把類別也加到屬性標籤裡，方便搜尋
         if confidence > 0.6:
@@ -136,11 +123,60 @@ class ModelAAdapter:
             "category": category,
             "category_zh": translate_category(category), # 需要一個翻譯函數
             "attributes": attributes,
-            "colors": colors,
-            "style": style,
+            "colors": [color_name], # 前端顯示中文與 Hex
+            "style": [style],
             "confidence": confidence,
             "source": "model_a" # 標記來源
         }
+
+    def _get_color_name(self, hex_code):
+        """將 Hex 色碼轉換為中文顏色名稱 (簡單版)"""
+        # 將 hex 轉為 rgb
+        h = hex_code.lstrip('#')
+        r, g, b = tuple(int(h[i:i+2], 16) for i in (0, 2, 4))
+        
+        # 定義基本顏色中心點
+        colors = {
+            "黑色": (0, 0, 0),
+            "白色": (255, 255, 255),
+            "灰色": (128, 128, 128),
+            "紅色": (255, 0, 0),
+            "橘色": (255, 165, 0),
+            "黃色": (255, 255, 0),
+            "綠色": (0, 128, 0),
+            "藍色": (0, 0, 255),
+            "紫色": (128, 0, 128),
+            "粉紅": (255, 192, 203),
+            "棕色": (165, 42, 42),
+            "米色": (245, 245, 220),
+            "卡其": (240, 230, 140),
+            "深藍": (0, 0, 139),
+        }
+        
+        min_dist = float('inf')
+        closest_name = "其他"
+        
+        for name, (cr, cg, cb) in colors.items():
+            dist = ((r - cr)**2 + (g - cg)**2 + (b - cb)**2) ** 0.5
+            if dist < min_dist:
+                min_dist = dist
+                closest_name = name
+                
+        return closest_name
+
+    def _translate_style(self, style):
+        MAPPING = {
+            'casual': '休閒',
+            'formal': '正式',
+            'sporty': '運動',
+            'vintage': '復古',
+            'elegant': '優雅',
+            'boho': '波西米亞',
+            'chic': '時尚',
+            'business': '商務',
+            'party': '派對'
+        }
+        return MAPPING.get(style, style)
 
 # 簡單的翻譯對照表 (DeepFashion -> 中文)
 def translate_category(eng_name):
