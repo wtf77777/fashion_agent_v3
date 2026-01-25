@@ -1,0 +1,273 @@
+/* ========== 基於 img.png 的動態上傳卡片樣式 ========== */
+
+:root {
+    --card-bg: #ffffff;
+    --upload-border: #efefef;
+    --primary-blue: #4a90e2;
+    --text-main: #333333;
+}
+
+/* 玻璃質感/陰影卡片 */
+.card-glass {
+    background: var(--card-bg);
+    border-radius: 12px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+    border: 1px solid var(--upload-border);
+    padding: 30px;
+    text-align: center;
+    margin-bottom: 30px;
+}
+
+.card-title {
+    font-size: 1.2rem;
+    color: var(--text-main);
+    margin-bottom: 20px;
+    font-weight: 500;
+}
+
+/* 控制列布局 */
+.upload-controls {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 15px;
+    flex-wrap: wrap;
+}
+
+.upload-dropzone {
+    border: 1px dashed #cccccc;
+    background: #fcfcfc;
+    border-radius: 8px;
+    padding: 15px 30px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    cursor: pointer;
+    min-width: 150px;
+    transition: all 0.3s;
+}
+
+.upload-dropzone:hover {
+    border-color: var(--primary-blue);
+    background: #f0f7ff;
+}
+
+.plus-icon {
+    font-size: 2rem;
+    color: #cccccc;
+    margin-bottom: 5px;
+}
+
+.btn-ghost {
+    background: #f5f5f5;
+    border: 1px solid #eeeeee;
+    padding: 6px 15px;
+    border-radius: 4px;
+    color: #666;
+    cursor: pointer;
+}
+
+.settings-group {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+.warmth-select {
+    padding: 8px 12px;
+    border: 1px solid #dddddd;
+    border-radius: 6px;
+    min-width: 180px;
+    background: white;
+    font-size: 0.95rem;
+    appearance: none;
+    background-image: url("data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 8px center;
+    background-size: 16px;
+}
+
+.btn-confirm {
+    background: var(--primary-blue);
+    color: white;
+    border: none;
+    padding: 8px 25px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 500;
+    transition: background 0.2s;
+}
+
+.btn-confirm:hover {
+    background: #357abd;
+}
+
+/* 待上傳清單樣式 */
+.queue-section {
+    margin-top: 20px;
+}
+
+.queue-actions h3 {
+    font-size: 1.1rem;
+    margin-bottom: 15px;
+    color: var(--gray-700);
+}
+
+.queue-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.queue-empty-msg {
+    text-align: center;
+    padding: 40px;
+    color: var(--gray-400);
+    font-style: italic;
+    background: rgba(255, 255, 255, 0.5);
+    border-radius: 8px;
+}
+
+.queue-item {
+    background: white;
+    border: 1px solid var(--upload-border);
+    border-radius: 8px;
+    padding: 12px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.02);
+}
+
+.item-left {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+
+.item-thumbnail {
+    width: 60px;
+    height: 60px;
+    border-radius: 6px;
+    object-fit: cover;
+    background: #eee;
+}
+
+.item-meta {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.item-name {
+    font-weight: 500;
+    color: #333;
+}
+
+.item-tag {
+    background: #f3f3f3;
+    padding: 2px 12px;
+    border-radius: 4px;
+    font-size: 0.85rem;
+    color: #666;
+    width: fit-content;
+}
+
+/* 標籤顏色 */
+.warmth-tag-薄 {
+    background: #e0faff;
+    color: #008fa1;
+}
+
+.warmth-tag-適中 {
+    background: #fff4e0;
+    color: #a17300;
+}
+
+.warmth-tag-厚 {
+    background: #ffe8e0;
+    color: #a13d00;
+}
+
+.item-actions {
+    display: flex;
+    gap: 10px;
+}
+
+.btn-icon {
+    background: #f9f9f9;
+    border: 1px solid #eeeeee;
+    padding: 6px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    color: #888;
+    font-size: 1rem;
+}
+
+.btn-icon:hover {
+    background: #f0f0f0;
+}
+
+/* 儲存按鈕 */
+.btn-text-save {
+    background: var(--success);
+    color: #000000;
+    border: none;
+    padding: 6px 15px;
+    border-radius: 4px;
+    font-size: 0.85rem;
+    cursor: pointer;
+    font-weight: 600;
+}
+
+.warmth-select-small {
+    padding: 4px 8px;
+    border-radius: 4px;
+    border: 1px solid var(--primary-blue);
+    font-size: 0.85rem;
+    outline: none;
+}
+
+/* 底部大按鈕 */
+.btn-batch-upload {
+    background: var(--primary-blue);
+    color: white;
+    border: none;
+    padding: 15px 40px;
+    border-radius: 8px;
+    font-size: 1.1rem;
+    font-weight: 600;
+    cursor: pointer;
+    box-shadow: 0 4px 10px rgba(74, 144, 226, 0.3);
+    width: 100%;
+}
+
+/* 手機版適配 */
+@media (max-width: 768px) {
+    .upload-controls {
+        flex-direction: column;
+    }
+
+    .upload-dropzone,
+    .settings-group,
+    .warmth-select,
+    .btn-confirm {
+        width: 100%;
+    }
+
+    .item-left {
+        gap: 12px;
+    }
+
+    .queue-item {
+        padding: 10px;
+    }
+
+    .item-name {
+        font-size: 0.9rem;
+        max-width: 120px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+}
