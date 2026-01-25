@@ -262,12 +262,11 @@ async def get_recommendation(
         if not recommendation:
             return {"success": False, "message": "推薦生成失敗"}
         
-        items = ai_service.parse_recommended_items(recommendation, wardrobe)
-        
+        # ✅ Oreoooooo 修正：因為現在回傳的是結構化資料，不需再手動解析文字
         return {
             "success": True,
-            "recommendation": recommendation,
-            "items": [item.to_dict() for item in items]
+            "recommendation": recommendation, # 包含 vibe 和 recommendations
+            "items": [] # 為了相容前端舊欄位，保留但留空，主要資料在 recommendation 裡
         }
     except Exception as e:
         print(f"[ERROR] 推薦: {str(e)}")
