@@ -10,6 +10,7 @@ from database.models import ClothingItem, WeatherData
 
 from google.api_core.exceptions import ResourceExhausted
 from api.model_a_adapter import ModelAAdapter
+from api.recommendation_engine import RecommendationEngine
 
 class AIService:
     def __init__(self, api_key: str, rate_limit_seconds: int = 15):
@@ -189,37 +190,54 @@ class AIService:
         weather: WeatherData,
         style: str,
         occasion: str
-    ) -> Optional[str]:
-        """生成穿搭推薦"""
+    ) -> Optional[Dict]:
+        """產出智能推薦穿搭組合"""
         try:
-            self._rate_limit_wait()
-            wardrobe_summary = [
-                {k: v for k, v in item.to_dict().items() if k != 'image_data'}
-                for item in wardrobe
-            ]
+            # 1. 使用 Gemini 解析精細場景 (例如：去電影院約會 -> 需要帶外套、浪漫休閒)
+            analysis_prompt = f"""
+            使用者描述："{occasion}｜風格偏好：{style}"
             
-            prompt = f"""
-你是一位專業的 AI 時尚顧問。請根據以下資訊推薦今日穿搭:
+            請根據以上內容解析場景意圖。
+            回傳格式必須是 JSON，包含：
+            {{
+                "normalized_occasion": "約會|日常|運動|上班|正式",
+                "needs_outer": true/false (是否因為場合如電影院、冷氣房或溫差需要外套),
+                "vibe_description": "一段約 30 字的專業穿搭顧問開場白",
+                "parsed_style": "從描述中提取出的核心風格關鍵字(例如：英倫, 街頭, 低調)"
+            }}
+            """
+            
+            response = self.model.generate_content(analysis_prompt)
+            try:
+                # 簡單清理並加載 JSON
+                clean_json = response.text.strip().replace('```json','').replace('```','')
+                analysis = json.loads(clean_json)
+            except:
+                analysis = {
+                    "normalized_occasion": "日常", 
+                    "needs_outer": False, 
+                    "vibe_description": "為您挑選了幾套合適的穿搭方案。",
+                    "parsed_style": style
+                }
+                
+            # 2. 呼叫引擎從衣櫥挑選衣服 (對接參數)
+            engine = RecommendationEngine()
+            outfits = engine.recommend(
+                wardrobe=wardrobe,
+                weather=weather,
+                occasion=analysis["normalized_occasion"],
+                target_style=analysis["parsed_style"],
+                force_outer=analysis["needs_outer"]  # ✅ 將 Gemini 建議傳給引擎
+            )
+            
+            if not outfits:
+                return None
+                
+            return {
+                "vibe": analysis["vibe_description"],
+                "recommendations": outfits
+            }
 
-**情境資訊:**
-- 城市: {weather.city}
-- 溫度: {weather.temp}°C (體感 {weather.feels_like}°C)
-- 天氣: {weather.desc}
-- **場合/活動: {occasion}**
-- **指定風格: {style}**
-
-**使用者衣櫥:**
-{json.dumps(wardrobe_summary, ensure_ascii=False, indent=2)}
-
-**請提供:**
-1. 推薦的完整穿搭組合,必須符合「{style}」風格並適合「{occasion}」場合。
-2. 每件單品的選擇理由 (需綜合考慮天氣、風格特色與場合得體度)。
-3. 整體風格說明與針對「{occasion}」的穿搭小建議。
-
-請用親切、專業的口吻回答,使用繁體中文。
-"""
-            response = self.model.generate_content(prompt)
-            return response.text
         except Exception as e:
             print(f"AI 推薦失敗: {str(e)}")
             return None
