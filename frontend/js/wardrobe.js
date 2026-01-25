@@ -37,6 +37,23 @@ const WardrobeUI = {
                 this.setFilter(filter);
             });
         });
+
+        // ✅ 監聽編輯表單預設提交
+        const editForm = document.getElementById('edit-form');
+        if (editForm) {
+            editForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                this.handleUpdateItem();
+            });
+        }
+
+        // 監聽關閉編輯 Modal 按鈕
+        const closeEditModalBtn = document.getElementById('close-edit-modal-btn');
+        if (closeEditModalBtn) {
+            closeEditModalBtn.addEventListener('click', () => {
+                this.closeEditModal();
+            });
+        }
     },
 
     // ========== 過濾功能 ==========
@@ -216,14 +233,17 @@ const WardrobeUI = {
         const card = document.createElement('div');
         card.className = 'wardrobe-item';
         card.dataset.itemId = item.id;
+        // ✅ 點擊卡片觸發編輯 Modal
+        card.onclick = () => this.openEditModal(item.id);
+
 
         let checkboxHTML = '';
         if (this.isBatchDeleteMode) {
             const isSelected = this.selectedItems.has(item.id);
             checkboxHTML = `
                 <div class="item-checkbox">
-                    <input type="checkbox" 
-                           id="check-${item.id}" 
+                    <input type="checkbox"
+                           id="check-${item.id}"
                            ${isSelected ? 'checked' : ''}
                            onchange="WardrobeUI.toggleItemSelection(${item.id})">
                     <label for="check-${item.id}">選擇</label>
