@@ -7,7 +7,10 @@ import torch
 import torch.nn as nn
 import torchvision.models as models
 from typing import Dict, Tuple
-import config
+try:
+    from . import config
+except ImportError:
+    import config
 
 
 class FashionMultiTaskModel(nn.Module):
