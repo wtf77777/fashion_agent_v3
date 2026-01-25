@@ -11,8 +11,12 @@ from pathlib import Path
 from typing import Dict, List
 import cv2
 
-import config
-from model import FashionMultiTaskModel
+try:
+    from . import config
+    from .model import FashionMultiTaskModel
+except ImportError:
+    import config
+    from model import FashionMultiTaskModel
 
 
 class FashionPredictor:
