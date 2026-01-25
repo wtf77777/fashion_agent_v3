@@ -1,6 +1,6 @@
 """
-AI 服務層
-處理所有與 Gemini API 相關的業務邏輯
+AI 服務層 - Oreoooooo 終極穩定整合版
+處理所有與 Gemini API 相關的業務邏輯，包含重試機制、高品質 Prompt 與階梯式辨識
 """
 import json
 import time
@@ -8,7 +8,7 @@ import google.generativeai as genai
 from typing import List, Dict, Optional, Tuple
 from database.models import ClothingItem, WeatherData
 
-from google.api_core.exceptions import ResourceExhausted
+from google.api_core.exceptions import ResourceExhausted, InternalServerError
 from api.model_a_adapter import ModelAAdapter
 from api.recommendation_engine import RecommendationEngine
 
@@ -18,80 +18,78 @@ class AIService:
         self.rate_limit_seconds = rate_limit_seconds
         self.last_request_time = 0
         genai.configure(api_key=api_key)
+        
         # 設定安全過濾 (關閉以避免誤判衣物圖片)
         self.safety_settings = [
-            {
-                "category": "HARM_CATEGORY_HARASSMENT",
-                "threshold": "BLOCK_NONE"
-            },
-            {
-                "category": "HARM_CATEGORY_HATE_SPEECH",
-                "threshold": "BLOCK_NONE"
-            },
-            {
-                "category": "HARM_CATEGORY_SEXUALLY_EXPLICIT",
-                "threshold": "BLOCK_NONE"
-            },
-            {
-                "category": "HARM_CATEGORY_DANGEROUS_CONTENT",
-                "threshold": "BLOCK_NONE"
-            }
+            {"category": "HARM_CATEGORY_HARASSMENT", "threshold": "BLOCK_NONE"},
+            {"category": "HARM_CATEGORY_HATE_SPEECH", "threshold": "BLOCK_NONE"},
+            {"category": "HARM_CATEGORY_SEXUALLY_EXPLICIT", "threshold": "BLOCK_NONE"},
+            {"category": "HARM_CATEGORY_DANGEROUS_CONTENT", "threshold": "BLOCK_NONE"}
         ]
         
-        # 使用使用者指定的版本 2.5-flash
-        self.model = genai.GenerativeModel('gemini-2.5-flash', safety_settings=self.safety_settings)
+        # 依照 Oreoooooo 要求，定義階梯模型 (Tier 1 & Tier 2)
+        # 注意: 確保系統環境支援此模型名稱
+        self.model_t1 = genai.GenerativeModel('gemini-2.5-flash', safety_settings=self.safety_settings)
+        self.model_t2 = genai.GenerativeModel('gemini-3-flash-preview', safety_settings=self.safety_settings)
     
     def _rate_limit_wait(self):
-        """API 速率限制保護"""
+        """API 速率限制保護 - 嚴格版"""
         current_time = time.time()
         time_since_last = current_time - self.last_request_time
         
         if time_since_last < self.rate_limit_seconds:
             wait_time = self.rate_limit_seconds - time_since_last
+            print(f"[AI] ⏳ 速率限制保護中，等待 {wait_time:.1f} 秒...")
             time.sleep(wait_time)
         
         self.last_request_time = time.time()
 
     def batch_auto_tag(self, img_bytes_list: List[bytes]) -> Optional[List[Dict]]:
-        final_results = [None] * len(img_bytes_list)
-        gemini_indices = []
-        gemini_img_bytes = []
+        """
+        Oreoooooo 階梯式自動標籤辨識:
+        1. 先嘗試 Gemini 2.5-flash (具備重試)
+        2. 若爆流量則試 Gemini 3-flash-preview (具備重試)
+        3. 均失敗則 Fallback 到本地 Model A
+        """
+        print(f"[AI] 開始對 {len(img_bytes_list)} 件衣物進行階梯式辨識分析...")
         
-        # 1. 嘗試使用本地 Model A
-        print(f"[AI] 開始批次辨識 {len(img_bytes_list)} 張圖片...")
+        # A. 嘗試模型 1 (2.5-flash)
+        results = self._call_gemini_with_robust_logic(self.model_t1, img_bytes_list, "Tier 1 (2.5-flash)")
+        if results: return results
+        
+        # B. 嘗試模型 2 (3-preview)
+        results = self._call_gemini_with_robust_logic(self.model_t2, img_bytes_list, "Tier 2 (3-preview)")
+        if results: return results
+
+        # C. 最終 Fallback - 本地 Model A (當 API 均不可用時)
+        print("[AI] ⚠️ 所有 Gemini 模型均已達流量上限或失敗，啟動本地 Model A 辨識...")
         adapter = ModelAAdapter()
-        
+        final_results = []
         for idx, img_bytes in enumerate(img_bytes_list):
-            # 嘗試使用本地模型
             local_result = adapter.analyze_image(img_bytes)
-            
             if local_result:
-                print(f"[AI] 分部 {idx+1}: Model A 辨識成功 ({local_result['confidence']:.2f})")
-                # 轉換為統一格式
-                final_results[idx] = {
+                final_results.append({
                     "name": f"{local_result['colors'][0]} {local_result['category_zh']}" if local_result['colors'] else local_result['category_zh'],
                     "category": self._map_category_to_frontend(local_result['category']),
                     "color": local_result['colors'][0] if local_result['colors'] else "未知",
                     "style": local_result['style'][0] if local_result['style'] else "休閒"
-                }
+                })
             else:
-                print(f"[AI] 分部 {idx+1}: Model A 辨識失敗/未啟用，加入 Gemini 隊列")
-                gemini_indices.append(idx)
-                gemini_img_bytes.append(img_bytes)
+                final_results.append({"name": f"未知衣物 {idx+1}", "category": "上衣", "color": "未知", "style": "休閒"})
         
-        # 如果所有圖片都已由 Model A 處理完成，直接返回
-        if not gemini_indices:
-            print("[AI] ✅ 全部由本地 Model A 完成辨識")
-            return final_results
+        print(f"[AI] ✅ 回歸本地 Model A辨識完成 ({len(final_results)} 件)")
+        return final_results
 
-        # 2. 剩餘圖片使用 Gemini API (Fallback)
+    def _call_gemini_with_robust_logic(self, model, img_bytes_list, label) -> Optional[List[Dict]]:
+        """原本最穩健的呼叫邏輯 (包含 Retry, JSON 清洗, Candidates 檢查)"""
         try:
-            print(f"[AI] 轉送 {len(gemini_img_bytes)} 張圖片給 Gemini API...")
             self._rate_limit_wait()
-            
-            prompt = f"""請仔細分析這 {len(gemini_img_bytes)} 件衣服,為每件衣服分別回傳 JSON 格式的標籤。
+            print(f"[AI] 🚀 正在嘗試 {label}...")
+
+            # 補回最高品質的 Prompt
+            prompt = f"""請仔細分析這 {len(img_bytes_list)} 件衣服,為每件衣服分別回傳 JSON 格式的標籤。
  
-回傳格式必須是一個 JSON 陣列,包含 {len(gemini_img_bytes)} 個物件:
+回傳格式必須是一個 JSON 陣列,包含 {len(img_bytes_list)} 個物件:
 [
   {{
     "name": "衣服名稱(如:白色T恤、牛仔褲)",
@@ -108,71 +106,98 @@ class AIService:
 3. 陣列中的順序必須與圖片順序一致
 4. 每個物件都必須包含這 4 個欄位
 """
-            
-            content_parts = [prompt]
-            for idx, img_bytes in enumerate(gemini_img_bytes):
-                content_parts.append({
-                    "mime_type": "image/jpeg",
-                    "data": img_bytes
-                })
-            
-            print(f"[AI] 發送請求到 Gemini API...")
-            
+            content_parts = [{"mime_type": "image/jpeg", "data": img} for img in img_bytes_list]
+            content_parts.insert(0, prompt)
+
             max_retries = 3
             retry_count = 0
-            response = None
-            
             while retry_count < max_retries:
                 try:
-                    response = self.model.generate_content(content_parts)
-                    break
-                except ResourceExhausted as e:
+                    response = model.generate_content(content_parts)
+                    return self._parse_and_validate_response(response, len(img_bytes_list))
+                except ResourceExhausted:
                     retry_count += 1
                     wait_time = 30 * retry_count
-                    print(f"[AI] ⚠️ 觸發速率限制 (429)，等待 {wait_time} 秒後重試 ({retry_count}/{max_retries})...")
+                    print(f"[AI] ⚠️ {label} 速率限制，等待 {wait_time} 秒後重試 ({retry_count}/{max_retries})...")
                     time.sleep(wait_time)
-                    if retry_count == max_retries:
-                        raise e
-            
-            print(f"[AI] 收到 API 回應")
-            
+                except Exception as e:
+                    print(f"[AI] {label} 呼叫異常: {e}")
+                    break
+            return None
+        except Exception as e:
+            print(f"[AI] {label} 區塊執行失敗: {e}")
+            return None
+
+    def _parse_and_validate_response(self, response, count):
+        """原本代碼中最完整的解析邏輯"""
+        try:
+            # 檢查是否存在 content
             try:
                 raw_text = response.text
             except ValueError:
                 if response.candidates and response.candidates[0].content.parts:
                     raw_text = response.candidates[0].content.parts[0].text
                 else:
-                    raise ValueError("AI 回應為空，無法解析")
+                    return None
             
-            clean_text = raw_text.strip()
-            clean_text = clean_text.replace('```json', '').replace('```', '').strip()
+            clean_text = raw_text.strip().replace('```json', '').replace('```', '').strip()
+            data = json.loads(clean_text)
             
-            gemini_tags_list = json.loads(clean_text)
+            if isinstance(data, list) and len(data) == count:
+                return data
+            return None
+        except:
+            return None
+
+    def generate_outfit_recommendation(
+        self, wardrobe: List[ClothingItem], weather: WeatherData, style: str, occasion: str
+    ) -> Optional[Dict]:
+        """產出智能穿搭組合 - 含完整解析與 Gemini 結語"""
+        try:
+            self._rate_limit_wait()
+            # 1. 意圖解析
+            analysis_prompt = f"""
+            使用者描述："{occasion}｜風格偏好：{style}"
+            請解析場景意圖與天氣影響({weather.temp}度)。
+            回傳 JSON: {{
+                "normalized_occasion": "約會|日常|運動|上班|正式",
+                "needs_outer": bool,
+                "vibe_description": "一段專為使用者寫的 30 字開場",
+                "parsed_style": "核心風格標籤"
+            }}
+            """
+            res = self.model_t1.generate_content(analysis_prompt)
+            analysis = json.loads(res.text.strip().replace('```json','').replace('```',''))
             
-            if not isinstance(gemini_tags_list, list):
-                raise ValueError("AI 回傳格式錯誤: 應為陣列")
+            # 2. 引擎從真實衣櫥挑選
+            engine = RecommendationEngine()
+            outfits = engine.recommend(
+                wardrobe, weather, analysis["normalized_occasion"], "中性", 
+                analysis["parsed_style"], analysis["needs_outer"]
+            )
             
-            if len(gemini_tags_list) != len(gemini_img_bytes):
-                raise ValueError(f"AI 回傳數量不符: 預期 {len(gemini_img_bytes)} 件,實際 {len(gemini_tags_list)} 件")
+            if not outfits: return None
+
+            # 3. 針對具體衣服產出 80 字溫馨總結 (Gemini 結語)
+            detail_prompt = f"針對以下這 3 套從衣櫥挑出的方案，寫一段約 80 字的顧問話語給使用者，解釋這幾套為何適合今天({weather.temp}度)及{occasion}：\n"
+            for i, o in enumerate(outfits):
+                names = [f"{it['color']}{it['name']}" for it in o['items']]
+                detail_prompt += f"方案{i+1}: {', '.join(names)}\n"
             
-            # 將 Gemini 結果填回對應位置
-            for i, tags in enumerate(gemini_tags_list):
-                original_idx = gemini_indices[i]
-                final_results[original_idx] = tags
+            self._rate_limit_wait()
+            reason_res = self.model_t1.generate_content(detail_prompt)
             
-            print(f"[AI] ✅ 混合辨識完成 (Model A: {len(img_bytes_list)-len(gemini_indices)}, Gemini: {len(gemini_indices)})")
-            return final_results
-            
+            return {
+                "vibe": analysis["vibe_description"],
+                "detailed_reasons": reason_res.text,
+                "recommendations": outfits
+            }
         except Exception as e:
-            print(f"[AI] ❌ Gemini 辨識失敗: {str(e)}")
-            # 如果 Gemini 失敗，至少回傳 Model A 成功的部份 (失敗的部分用 None 或預設值)
-            # 這裡簡單處理：只要有部分失敗就算全部失敗 (前端可能會重試)
-            # 或者我們可以回傳部分結果
+            print(f"[AI Recommendation Error] {e}")
             return None
 
     def _map_category_to_frontend(self, model_cat: str) -> str:
-        """將 Model A 的類別對應到前端 (上衣|下身|外套|鞋子|配件)"""
-        # 簡單映射邏輯
+        """將 Model A 的類別對應到前端 (Oreoooooo 指定完整版)"""
         UPPER = ['Tee', 'Blouse', 'Top', 'Tank', 'Jersey', 'Hoodie', 'Sweater']
         LOWER = ['Jeans', 'Shorts', 'Skirt', 'Sweatpants', 'Joggers', 'Leggings', 'Chinos']
         OUTER = ['Jacket', 'Coat', 'Blazer', 'Cardigan', 'Parka', 'Kimono']
@@ -181,83 +206,15 @@ class AIService:
         if model_cat in UPPER: return "上衣"
         if model_cat in LOWER: return "下身"
         if model_cat in OUTER: return "外套"
-        if model_cat in FULL: return "上衣" # 或連身裝，視前端需求
-        return "配件" # 預設
-    
-    def generate_outfit_recommendation(
-        self, 
-        wardrobe: List[ClothingItem],
-        weather: WeatherData,
-        style: str,
-        occasion: str
-    ) -> Optional[Dict]:
-        """產出智能推薦穿搭組合"""
-        try:
-            # 1. 使用 Gemini 解析精細場景 (例如：去電影院約會 -> 需要帶外套、浪漫休閒)
-            analysis_prompt = f"""
-            使用者描述："{occasion}｜風格偏好：{style}"
-            
-            請根據以上內容解析場景意圖。
-            回傳格式必須是 JSON，包含：
-            {{
-                "normalized_occasion": "約會|日常|運動|上班|正式",
-                "needs_outer": true/false (是否因為場合如電影院、冷氣房或溫差需要外套),
-                "vibe_description": "一段約 30 字的專業穿搭顧問開場白",
-                "parsed_style": "從描述中提取出的核心風格關鍵字(例如：英倫, 街頭, 低調)"
-            }}
-            """
-            
-            response = self.model.generate_content(analysis_prompt)
-            try:
-                # 簡單清理並加載 JSON
-                clean_json = response.text.strip().replace('```json','').replace('```','')
-                analysis = json.loads(clean_json)
-            except:
-                analysis = {
-                    "normalized_occasion": "日常", 
-                    "needs_outer": False, 
-                    "vibe_description": "為您挑選了幾套合適的穿搭方案。",
-                    "parsed_style": style
-                }
-                
-            # 2. 呼叫引擎從衣櫥挑選衣服 (對接參數)
-            engine = RecommendationEngine()
-            outfits = engine.recommend(
-                wardrobe=wardrobe,
-                weather=weather,
-                occasion=analysis["normalized_occasion"],
-                target_style=analysis["parsed_style"],
-                force_outer=analysis["needs_outer"]  # ✅ 將 Gemini 建議傳給引擎
-            )
-            
-            if not outfits:
-                return None
-                
-            return {
-                "vibe": analysis["vibe_description"],
-                "recommendations": outfits
-            }
+        if model_cat in FULL: return "上衣"
+        return "配件"
 
-        except Exception as e:
-            print(f"AI 推薦失敗: {str(e)}")
-            return None
-    
-    def parse_recommended_items(
-        self, 
-        ai_response: str, 
-        wardrobe: List[ClothingItem]
-    ) -> List[ClothingItem]:
-        """解析 AI 推薦文字,提取推薦的衣物 ID"""
+    def parse_recommended_items(self, ai_response: str, wardrobe: List[ClothingItem]) -> List[ClothingItem]:
+        """保留解析函數以支援主流程"""
         recommended_items = []
-        response_lower = ai_response.lower()
-        
+        res = str(ai_response).lower()
         for item in wardrobe:
-            item_name = item.name.lower()
-            item_category = item.category.lower()
-            item_color = item.color.lower()
-            
-            if (item_name and item_name in response_lower) or \
-               (item_color and item_category and f"{item_color}{item_category}" in response_lower.replace(' ', '')):
+            if (item.name and item.name.lower() in res) or \
+               (f"{item.color}{item.category}".lower() in res.replace(' ', '')):
                 recommended_items.append(item)
-        
         return recommended_items
