@@ -69,8 +69,27 @@ class ClothingItem:
             image_data=data.get("image_data"),
             image_hash=data.get("image_hash"),
             image_url=data.get("image_url"),
-            created_at=datetime.fromisoformat(data["created_at"]) if data.get("created_at") else None
+            created_at=cls._parse_datetime(data.get("created_at"))
         )
+
+    @staticmethod
+    def _parse_datetime(date_str: Optional[str]) -> Optional[datetime]:
+        if not date_str:
+            return None
+        try:
+            # 處理 Z 結尾 (UTC)
+            if date_str.endswith('Z'):
+                date_str = date_str[:-1] + '+00:00'
+            return datetime.fromisoformat(date_str)
+        except ValueError:
+            # 如果 Python版本過舊不支援某些格式，嘗試簡單處理
+            try:
+                # 嘗試去掉小數點後的秒數
+                if '.' in date_str:
+                    date_str = date_str.split('.')[0] + '+00:00'
+                return datetime.fromisoformat(date_str)
+            except:
+                return None
 
 @dataclass
 class User:
