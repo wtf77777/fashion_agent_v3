@@ -272,6 +272,31 @@ async def get_recommendation(
         print(f"[ERROR] 推薦: {str(e)}")
         return {"success": False, "message": "推薦失敗"}
 
+@app.post("/api/wardrobe/update")
+async def update_clothing_item(
+    user_id: str = Form(...),
+    item_id: int = Form(...),
+    name: str = Form(...),
+    category: str = Form(...),
+    color: str = Form(...),
+    style: str = Form(...),
+    warmth: int = Form(...)
+):
+    """更新衣物資訊"""
+    try:
+        data = {
+            "name": name,
+            "category": category,
+            "color": color,
+            "style": style,
+            "warmth": warmth
+        }
+        success = wardrobe_service.update_item(user_id, item_id, data)
+        return {"success": success}
+    except Exception as e:
+        print(f"[ERROR] 更新衣物: {str(e)}")
+        return {"success": False, "message": str(e)}
+
 if __name__ == "__main__":
     import uvicorn
     port = int(os.environ.get("PORT", 8000))
