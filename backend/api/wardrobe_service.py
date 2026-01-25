@@ -79,6 +79,23 @@ class WardrobeService:
             print(f"讀取衣櫥失敗: {str(e)}")
             return []
     
+    def update_item(self, user_id: str, item_id: int, data: dict) -> bool:
+        """更新衣物資訊"""
+        try:
+            # Ensure 'updated_at' is set for updates
+            if 'updated_at' not in data:
+                data['updated_at'] = datetime.now().isoformat()
+            
+            result = self.db.client.table("my_wardrobe")\
+                .update(data)\
+                .eq("id", item_id)\
+                .eq("user_id", user_id)\
+                .execute()
+            return len(result.data) > 0
+        except Exception as e:
+            print(f"資料庫更新失敗: {str(e)}")
+            return False
+
     def delete_item(self, user_id: str, item_id: int) -> bool:
         """刪除單件衣物"""
         try:
