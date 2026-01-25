@@ -165,6 +165,29 @@ const API = {
         }
 
         return response.json();
+    },
+
+    async updateItem(itemId, data) {
+        const user = AppState.getUser();
+        const formData = new FormData();
+        formData.append('user_id', user.id);
+        formData.append('item_id', itemId);
+        formData.append('name', data.name);
+        formData.append('category', data.category);
+        formData.append('color', data.color);
+        formData.append('style', data.style);
+        formData.append('warmth', data.warmth);
+
+        const response = await fetch(`${API_BASE_URL}/api/wardrobe/update`, {
+            method: 'POST',
+            body: formData
+        });
+
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
+        }
+
+        return response.json();
     }
 };
 
