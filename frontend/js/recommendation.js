@@ -1,198 +1,167 @@
-// ========== 推薦頁面 UI 邏輯 ==========
+// ========== 推薦頁面 UI 邏輯 - 智能推薦版 ==========
 const RecommendationUI = {
-    currentRecommendation: null,
-    recommendedItems: [],
-    currentItemIndex: 0,
-    
+    // 數據結構
+    // currentRecommendation: { vive: "...", recommendations: [{ items: [], score: 80, reasons: [] }, ...] }
+    aiResult: null,
+    currentSetIndex: 0,      // 目前在第幾套推薦 (Set 1, 2, 3)
+    currentItemIndex: 0,     // 目前在該套的第幾件單品 (Top, Bottom, Shoes...)
+
     init() {
         this.bindEvents();
     },
-    
+
     bindEvents() {
         // 獲取推薦按鈕
         document.getElementById('get-recommendation-btn').addEventListener('click', () => {
             this.handleGetRecommendation();
         });
-        
+
         // 城市選擇變更時更新天氣
         document.getElementById('city-select').addEventListener('change', () => {
-            Weather.loadWeather();
+            if (typeof Weather !== 'undefined') Weather.loadWeather();
         });
     },
-    
+
     async handleGetRecommendation() {
         const city = document.getElementById('city-select').value;
         const style = document.getElementById('style-input').value.trim();
         const occasion = document.getElementById('occasion-input').value.trim();
-        
-        AppState.setLoading(true);
-        
+
+        if (typeof AppState !== 'undefined') AppState.setLoading(true);
+
         try {
             const result = await API.getRecommendation(city, style, occasion);
-            
-            if (result.success) {
-                this.currentRecommendation = result.recommendation;
-                this.recommendedItems = result.items || [];
+
+            if (result.success && result.recommendation) {
+                // 儲存後端回傳的結構化推薦
+                this.aiResult = result.recommendation;
+                this.currentSetIndex = 0;
                 this.currentItemIndex = 0;
-                
-                this.renderRecommendation();
-                Toast.success('✨ 穿搭推薦已生成！');
+
+                this.renderAll();
+                if (typeof Toast !== 'undefined') Toast.success('✨ 智能穿搭方案已生成！');
             } else {
-                Toast.error(result.message || '獲取推薦失敗');
+                if (typeof Toast !== 'undefined') Toast.error(result.message || '獲取推薦失敗');
             }
         } catch (error) {
             console.error('推薦錯誤:', error);
-            Toast.error('獲取推薦失敗: ' + error.message);
+            if (typeof Toast !== 'undefined') Toast.error('獲取推薦失敗: ' + error.message);
         } finally {
-            AppState.setLoading(false);
+            if (typeof AppState !== 'undefined') AppState.setLoading(false);
         }
     },
-    
-    renderRecommendation() {
+
+    renderAll() {
         const resultContainer = document.getElementById('recommendation-result');
         const textContainer = document.getElementById('recommendation-text');
-        const itemsContainer = document.getElementById('recommendation-items');
-        
-        // 顯示結果容器
+
+        // 1. 顯示主容器
         resultContainer.style.display = 'block';
-        
-        // 渲染推薦文字
-        textContainer.innerHTML = this.formatRecommendationText(this.currentRecommendation);
-        
-        // 渲染推薦單品
-        if (this.recommendedItems.length > 0) {
-            this.renderCarousel();
-        } else {
-            itemsContainer.innerHTML = `
-                <div class="no-items">
-                    <p>💡 AI 推薦的衣物未在您的衣櫥中找到對應圖片</p>
-                    <p>建議上傳更多衣服以獲得更精準的視覺化推薦</p>
-                </div>
-            `;
-        }
-        
-        // 滾動到結果區域
+
+        // 2. 顯示 AI 描述
+        textContainer.innerHTML = `<div class="vibe-box"><i class="fas fa-magic"></i> ${this.aiResult.vibe}</div>`;
+
+        // 3. 渲染主推薦區塊 (包含 Tabs 和 Carousel)
+        this.renderRecommendationSets();
+
+        // 4. 滾動到結果
         resultContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
     },
-    
-    formatRecommendationText(text) {
-        // 將純文字轉換為 HTML 格式
-        // 處理換行、列表等
-        const lines = text.split('\n');
-        let html = '';
-        let inList = false;
-        
-        lines.forEach(line => {
-            line = line.trim();
-            if (!line) return;
-            
-            // 檢測標題 (以 ** 包圍或以 # 開頭)
-            if (line.startsWith('**') && line.endsWith('**')) {
-                if (inList) {
-                    html += '</ul>';
-                    inList = false;
-                }
-                const title = line.replace(/\*\*/g, '');
-                html += `<h4>${title}</h4>`;
-            }
-            // 檢測列表項 (以 - 或 數字. 開頭)
-            else if (line.match(/^[-*]\s/) || line.match(/^\d+\.\s/)) {
-                if (!inList) {
-                    html += '<ul>';
-                    inList = true;
-                }
-                const content = line.replace(/^[-*]\s/, '').replace(/^\d+\.\s/, '');
-                html += `<li>${content}</li>`;
-            }
-            // 普通段落
-            else {
-                if (inList) {
-                    html += '</ul>';
-                    inList = false;
-                }
-                html += `<p>${line}</p>`;
-            }
-        });
-        
-        if (inList) {
-            html += '</ul>';
-        }
-        
-        return html;
-    },
-    
-    renderCarousel() {
+
+    renderRecommendationSets() {
         const container = document.getElementById('recommendation-items');
-        
-        container.innerHTML = `
-            <div class="carousel-container">
-                <button class="carousel-btn prev" onclick="RecommendationUI.prevItem()">
-                    ◀
+        const sets = this.aiResult.recommendations; // 這是 [ 套裝1, 套裝2, 套裝3 ]
+
+        if (!sets || sets.length === 0) {
+            container.innerHTML = `<div class="no-items">💡 沒有找到適合的穿搭組合，建議增加衣櫥收藏！</div>`;
+            return;
+        }
+
+        // 上方 Tabs
+        let tabsHtml = `<div class="recommendation-tabs">`;
+        sets.forEach((set, idx) => {
+            tabsHtml += `
+                <button class="tab-btn ${idx === this.currentSetIndex ? 'active' : ''}" 
+                        onclick="RecommendationUI.switchSet(${idx})">
+                    推薦方案 ${idx + 1}
                 </button>
+            `;
+        });
+        tabsHtml += `</div>`;
+
+        // 中間 Carousel
+        const currentSet = sets[this.currentSetIndex];
+        const currentItems = currentSet.items;
+
+        let carouselHtml = `
+            <div class="carousel-container">
+                <button class="carousel-btn prev" onclick="RecommendationUI.prevItem()">◀</button>
                 
                 <div class="carousel-main">
                     <div class="carousel-indicator">
-                        第 ${this.currentItemIndex + 1} / ${this.recommendedItems.length} 件
+                        ${currentItems[this.currentItemIndex].category} (${this.currentItemIndex + 1}/${currentItems.length})
                     </div>
                     
                     <div class="carousel-item-display">
-                        ${this.renderCurrentItem()}
+                        ${this.renderClothingItem(currentItems[this.currentItemIndex])}
                     </div>
                 </div>
                 
-                <button class="carousel-btn next" onclick="RecommendationUI.nextItem()">
-                    ▶
-                </button>
+                <button class="carousel-btn next" onclick="RecommendationUI.nextItem()">▶</button>
             </div>
             
-            <div class="carousel-dots">
-                ${this.recommendedItems.map((_, index) => `
-                    <button class="dot ${index === this.currentItemIndex ? 'active' : ''}"
-                            onclick="RecommendationUI.goToItem(${index})">
-                    </button>
-                `).join('')}
+            <div class="outfit-reasons">
+                <h4>✨ 推薦原因</h4>
+                <ul>
+                    ${currentSet.reasons.map(r => `<li>${r}</li>`).join('')}
+                </ul>
             </div>
         `;
+
+        container.innerHTML = tabsHtml + carouselHtml;
     },
-    
-    renderCurrentItem() {
-        const item = this.recommendedItems[this.currentItemIndex];
-        
+
+    renderClothingItem(item) {
+        // 處理圖片
+        const imgSrc = item.image_data ? `data:image/jpeg;base64,${item.image_data}` : 'static/images/placeholder.jpg';
+
         return `
-            <div class="recommended-item">
+            <div class="recommended-item animate-fade-in">
                 <div class="recommended-item-image">
-                    <img src="data:image/jpeg;base64,${item.image_data}" 
-                         alt="${item.name}">
+                    <img src="${imgSrc}" alt="${item.name}">
                 </div>
                 <div class="recommended-item-info">
                     <h3>${item.name}</h3>
-                    <div class="item-details">
-                        <p><strong>類別:</strong> ${item.category}</p>
-                        <p><strong>顏色:</strong> ${item.color}</p>
-                        <p><strong>風格:</strong> ${item.style || 'N/A'}</p>
-                        <p><strong>保暖度:</strong> ${'🔥'.repeat(item.warmth)}</p>
+                    <div class="item-tag-cloud">
+                        <span class="tag color">${item.color}</span>
+                        <span class="tag style">${item.style || '經典'}</span>
+                        <span class="tag warmth">保暖 ${'🔥'.repeat(item.warmth)}</span>
                     </div>
                 </div>
             </div>
         `;
     },
-    
+
+    // 控制邏輯
+    switchSet(index) {
+        this.currentSetIndex = index;
+        this.currentItemIndex = 0; // 重置到第一件
+        this.renderRecommendationSets();
+    },
+
     prevItem() {
+        const items = this.aiResult.recommendations[this.currentSetIndex].items;
         if (this.currentItemIndex > 0) {
             this.currentItemIndex--;
-            this.renderCarousel();
+            this.renderRecommendationSets();
         }
     },
-    
+
     nextItem() {
-        if (this.currentItemIndex < this.recommendedItems.length - 1) {
+        const items = this.aiResult.recommendations[this.currentSetIndex].items;
+        if (this.currentItemIndex < items.length - 1) {
             this.currentItemIndex++;
-            this.renderCarousel();
+            this.renderRecommendationSets();
         }
-    },
-    
-    goToItem(index) {
-        this.currentItemIndex = index;
-        this.renderCarousel();
     }
 };
