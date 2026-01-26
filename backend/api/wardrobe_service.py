@@ -82,10 +82,7 @@ class WardrobeService:
     def update_item(self, user_id: str, item_id: int, data: dict) -> bool:
         """更新衣物資訊"""
         try:
-            # Ensure 'updated_at' is set for updates
-            if 'updated_at' not in data:
-                data['updated_at'] = datetime.now().isoformat()
-            
+
             result = self.db.client.table("my_wardrobe")\
                 .update(data)\
                 .eq("id", item_id)\
