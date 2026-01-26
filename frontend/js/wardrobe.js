@@ -399,5 +399,57 @@ const WardrobeUI = {
         } finally {
             AppState.setLoading(false);
         }
+    },
+
+    // ✅ Oreoooooo 新增: 編輯 Modal 控制
+    openEditModal(itemId) {
+        const item = this.items.find(i => i.id === itemId);
+        if (!item) {
+            console.error('找不到衣物 ID:', itemId);
+            return;
+        }
+
+        document.getElementById('edit-item-id').value = item.id;
+        document.getElementById('edit-name').value = item.name || '';
+        document.getElementById('edit-category').value = item.category || '上衣';
+        document.getElementById('edit-color').value = item.color || '';
+        document.getElementById('edit-style').value = item.style || '';
+        document.getElementById('edit-warmth').value = item.warmth || 5;
+
+        document.getElementById('edit-modal').style.display = 'flex';
+        console.log('📝 開啟編輯 Modal:', item.name);
+    },
+
+    closeEditModal() {
+        document.getElementById('edit-modal').style.display = 'none';
+        console.log('❌ 關閉編輯 Modal');
+    },
+
+    async handleUpdateItem() {
+        const itemId = document.getElementById('edit-item-id').value;
+        const data = {
+            name: document.getElementById('edit-name').value,
+            category: document.getElementById('edit-category').value,
+            color: document.getElementById('edit-color').value,
+            style: document.getElementById('edit-style').value,
+            warmth: parseInt(document.getElementById('edit-warmth').value) || 5
+        };
+
+        AppState.setLoading(true);
+        try {
+            const result = await API.updateItem(itemId, data);
+            if (result.success) {
+                Toast.success('✅ 修改成功！');
+                this.closeEditModal();
+                await this.loadWardrobe(); // 重新載入衣櫥
+            } else {
+                Toast.error('修改失敗: ' + (result.message || '未知錯誤'));
+            }
+        } catch (error) {
+            console.error('更新錯誤:', error);
+            Toast.error('網路連線失敗');
+        } finally {
+            AppState.setLoading(false);
+        }
     }
 };
