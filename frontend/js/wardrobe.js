@@ -233,8 +233,8 @@ const WardrobeUI = {
         const card = document.createElement('div');
         card.className = 'wardrobe-item';
         card.dataset.itemId = item.id;
-        // ✅ 點擊卡片觸發編輯 Modal
-        card.onclick = () => this.openEditModal(item.id);
+        // ✅ 點擊卡片觸發編輯 Modal (強制使用 WardrobeUI 引用)
+        card.onclick = () => WardrobeUI.openEditModal(item.id);
 
 
         let checkboxHTML = '';
@@ -278,7 +278,7 @@ const WardrobeUI = {
                 </div>
                 ${!this.isBatchDeleteMode ? `
                     <button class="btn btn-secondary btn-delete" 
-                            onclick="WardrobeUI.deleteItem(${item.id})"
+                            onclick="event.stopPropagation(); WardrobeUI.deleteItem(${item.id})"
                             data-item-id="${item.id}">
                         🗑️ 刪除
                     </button>
