@@ -26,6 +26,10 @@ const AppState = {
     setLoading(loading) {
         this.isLoading = loading;
         const overlay = document.getElementById('loading-overlay');
+        if (!overlay) {
+            console.warn('⚠️ loading-overlay 元素不存在');
+            return;
+        }
         if (loading) {
             overlay.classList.add('active');
         } else {
@@ -38,6 +42,11 @@ const AppState = {
 const Toast = {
     show(message, type = 'info') {
         const toast = document.getElementById('toast');
+        if (!toast) {
+            console.warn('⚠️ toast 元素不存在，使用 alert 代替:', message);
+            alert(message);
+            return;
+        }
         toast.textContent = message;
         toast.className = `toast ${type} show`;
 
@@ -168,43 +177,71 @@ const Auth = {
 
     handleLogout() {
         AppState.setUser(null);
-        document.getElementById('auth-section').style.display = 'block';
-        document.getElementById('app-content').style.display = 'none';
-        document.getElementById('weather-widget').style.display = 'none';
-        document.getElementById('username-display').textContent = '未登入';
-        document.getElementById('logout-btn').style.display = 'none';
+
+        const authSection = document.getElementById('auth-section');
+        const appContent = document.getElementById('app-content');
+        const weatherWidget = document.getElementById('weather-widget');
+        const usernameDisplay = document.getElementById('username-display');
+        const logoutBtn = document.getElementById('logout-btn');
+
+        if (authSection) authSection.style.display = 'block';
+        if (appContent) appContent.style.display = 'none';
+        if (weatherWidget) weatherWidget.style.display = 'none';
+        if (usernameDisplay) usernameDisplay.textContent = '未登入';
+        if (logoutBtn) logoutBtn.style.display = 'none';
+
         Toast.info('已登出');
     },
 
     showAppContent(user) {
-        document.getElementById('auth-section').style.display = 'none';
-        document.getElementById('app-content').style.display = 'block';
-        document.getElementById('weather-widget').style.display = 'block';
-        document.getElementById('username-display').textContent = user.username;
-        document.getElementById('logout-btn').style.display = 'block';
+        const authSection = document.getElementById('auth-section');
+        const appContent = document.getElementById('app-content');
+        const weatherWidget = document.getElementById('weather-widget');
+        const usernameDisplay = document.getElementById('username-display');
+        const logoutBtn = document.getElementById('logout-btn');
+
+        if (authSection) authSection.style.display = 'none';
+        if (appContent) appContent.style.display = 'block';
+        if (weatherWidget) weatherWidget.style.display = 'block';
+        if (usernameDisplay) usernameDisplay.textContent = user.username;
+        if (logoutBtn) logoutBtn.style.display = 'block';
 
         // 載入天氣
-        Weather.loadWeather();
+        if (typeof Weather !== 'undefined') Weather.loadWeather();
     }
 };
 
 // ========== 天氣系統 ==========
 const Weather = {
     async loadWeather() {
-        const city = document.getElementById('city-select').value;
+        const citySelect = document.getElementById('city-select');
+        if (!citySelect) {
+            console.warn('⚠️ city-select 元素不存在');
+            return;
+        }
+
+        const city = citySelect.value;
 
         try {
             const weather = await API.getWeather(city);
 
             if (weather) {
-                document.getElementById('weather-city-name').textContent = `🌍 ${city} 即時天氣`;
-                document.getElementById('weather-temp').textContent = `${weather.temp}°C`;
-                document.getElementById('weather-feels').textContent = `${weather.feels_like}°C`;
-                document.getElementById('weather-desc').textContent = weather.desc;
+                const cityName = document.getElementById('weather-city-name');
+                const temp = document.getElementById('weather-temp');
+                const feels = document.getElementById('weather-feels');
+                const desc = document.getElementById('weather-desc');
+                const updateTime = document.getElementById('weather-update-time');
 
-                const now = new Date();
-                const timeStr = now.toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit' });
-                document.getElementById('weather-update-time').textContent = `⏰ 更新時間: ${timeStr} (每小時自動更新)`;
+                if (cityName) cityName.textContent = `🌍 ${city} 即時天氣`;
+                if (temp) temp.textContent = `${weather.temp}°C`;
+                if (feels) feels.textContent = `${weather.feels_like}°C`;
+                if (desc) desc.textContent = weather.desc;
+
+                if (updateTime) {
+                    const now = new Date();
+                    const timeStr = now.toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit' });
+                    updateTime.textContent = `⏰ 更新時間: ${timeStr} (每小時自動更新)`;
+                }
             }
         } catch (error) {
             console.error('載入天氣失敗:', error);
@@ -249,6 +286,11 @@ const Navigation = {
             case 'recommendation':
                 // Recommendation page 在 recommendation.js 中處理
                 break;
+            case 'profile':
+                if (typeof ProfileUI !== 'undefined') {
+                    ProfileUI.loadProfile();
+                }
+                break;
         }
     }
 };
@@ -276,20 +318,57 @@ const ScrollToTop = {
 };
 
 // ========== 城市選擇器 ==========
-document.getElementById('city-select').addEventListener('change', () => {
-    Weather.loadWeather();
-});
+const citySelect = document.getElementById('city-select');
+if (citySelect) {
+    citySelect.addEventListener('change', () => {
+        // 檢查是否在 iframe 中
+        if (window.self === window.top && typeof Weather !== 'undefined') {
+            Weather.loadWeather();
+        }
+    });
+}
 
 // ========== 應用初始化 ==========
 document.addEventListener('DOMContentLoaded', () => {
-    Auth.init();
-    Navigation.init();
-    ScrollToTop.init();
+    console.log('[初始化] 應用開始加載...');
 
-    // 初始化各個模組
-    if (typeof UploadUI !== 'undefined') UploadUI.init();
-    if (typeof WardrobeUI !== 'undefined') WardrobeUI.init();
-    if (typeof RecommendationUI !== 'undefined') RecommendationUI.init();
+    // ✅ 檢查是否在 iframe 中（已棄用，因為改為 SPA）
+    // const isInIframe = window.self !== window.top;
+
+    try {
+        console.log('[初始化] 應用開始加載...');
+        Auth.init();
+        Navigation.init();
+        ScrollToTop.init();
+
+        // 初始化各個模組
+        if (typeof UploadUI !== 'undefined') {
+            UploadUI.init();
+        }
+        if (typeof WardrobeUI !== 'undefined') {
+            WardrobeUI.init();
+        }
+        if (typeof RecommendationUI !== 'undefined') {
+            RecommendationUI.init();
+        }
+        if (typeof AnchorItemUI !== 'undefined') {
+            AnchorItemUI.init();
+        }
+        if (typeof ProfileUI !== 'undefined') {
+            console.log('[初始化] ProfileUI...');
+            ProfileUI.init();
+        }
+
+        console.log('[初始化] ✅ 應用加載完成');
+    } catch (error) {
+        console.error('[初始化] ❌ 應用初始化失敗:', error);
+        const toast = document.getElementById('toast');
+        if (toast) {
+            Toast.error('應用初始化失敗，請重新整理頁面');
+        } else {
+            alert('應用初始化失敗，請重新整理頁面');
+        }
+    }
 });
 
 // ========== 全局錯誤處理 ==========

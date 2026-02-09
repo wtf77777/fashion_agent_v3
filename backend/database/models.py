@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Optional
+from typing import Optional, List
 from datetime import datetime
 @dataclass
 class WeatherData:
@@ -98,3 +98,62 @@ class User:
     username: str = ""
     password: str = ""
     created_at: Optional[datetime] = None
+    
+    # ========== 新增欄位：個人資料 ==========
+    gender: Optional[str] = None              # male/female/other
+    height: Optional[str] = None              # 身高 (cm)
+    weight: Optional[str] = None              # 體重 (kg)
+    favorite_styles: Optional[List[str]] = None  # 喜好風格清單
+    dislikes: Optional[str] = None            # 避雷清單 (用逗號分隔)
+    thermal_preference: Optional[str] = None  # cold_sensitive/normal/heat_sensitive
+    custom_style_desc: Optional[str] = None   # 自訂描述
+    
+    def to_dict(self) -> dict:
+        """轉換為字典"""
+        return {
+            "id": self.id,
+            "username": self.username,
+            "password": self.password,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+            "gender": self.gender,
+            "height": self.height,
+            "weight": self.weight,
+            "favorite_styles": self.favorite_styles,
+            "dislikes": self.dislikes,
+            "thermal_preference": self.thermal_preference,
+            "custom_style_desc": self.custom_style_desc
+        }
+    
+    @classmethod
+    def from_dict(cls, data: dict) -> 'User':
+        """從字典建立 User 物件"""
+        return cls(
+            id=str(data.get("id", "")),
+            username=data.get("username", ""),
+            password=data.get("password", ""),
+            created_at=cls._parse_datetime(data.get("created_at")),
+            gender=data.get("gender"),
+            height=data.get("height"),
+            weight=data.get("weight"),
+            favorite_styles=data.get("favorite_styles"),
+            dislikes=data.get("dislikes"),
+            thermal_preference=data.get("thermal_preference"),
+            custom_style_desc=data.get("custom_style_desc")
+        )
+    
+    @staticmethod
+    def _parse_datetime(date_str: Optional[str]) -> Optional[datetime]:
+        """解析日期時間字符串"""
+        if not date_str:
+            return None
+        try:
+            if date_str.endswith('Z'):
+                date_str = date_str[:-1] + '+00:00'
+            return datetime.fromisoformat(date_str)
+        except ValueError:
+            try:
+                if '.' in date_str:
+                    date_str = date_str.split('.')[0] + '+00:00'
+                return datetime.fromisoformat(date_str)
+            except:
+                return None

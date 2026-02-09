@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>個人設定 - AI 時尚顧問</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .profile-container {
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+
+        .profile-header {
+            background: white;
+            border-radius: 16px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        }
+
+        .profile-header h1 {
+            color: #333;
+            font-size: 28px;
+            margin-bottom: 10px;
+        }
+
+        .profile-header p {
+            color: #666;
+            font-size: 14px;
+        }
+
+        .profile-tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #eee;
+        }
+
+        .profile-content {
+            background: white;
+            border-radius: 16px;
+            padding: 30px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        }
+
+        .profile-tab-btn {
+            padding: 12px 20px;
+            border: none;
+            background: transparent;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            color: #999;
+            transition: all 0.3s;
+            position: relative;
+        }
+
+        .profile-tab-btn.active {
+            color: #667eea;
+        }
+
+        .profile-tab-btn.active::after {
+            content: '';
+            position: absolute;
+            bottom: -2px;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: #667eea;
+        }
+
+
+
+        .tab-page {
+            display: none;
+        }
+
+        .tab-page.active {
+            display: block;
+            animation: fadeIn 0.3s;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .form-section {
+            margin-bottom: 30px;
+        }
+
+        .form-section h3 {
+            color: #333;
+            font-size: 18px;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #667eea;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .form-row.full {
+            grid-template-columns: 1fr;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .profile-form-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .profile-form-group label {
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+
+        .profile-form-group input,
+        .profile-form-group select,
+        .profile-form-group textarea {
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 14px;
+            font-family: inherit;
+            transition: all 0.3s;
+        }
+
+        .profile-form-group input:focus,
+        .profile-form-group select:focus,
+        .profile-form-group textarea:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .profile-form-group textarea {
+            min-height: 100px;
+            resize: vertical;
+        }
+
+        .radio-group {
+            display: flex;
+            gap: 20px;
+            margin-top: 10px;
+        }
+
+        .radio-option {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .radio-option input[type="radio"] {
+            cursor: pointer;
+            width: 18px;
+            height: 18px;
+        }
+
+        .radio-option label {
+            margin: 0;
+            cursor: pointer;
+            font-weight: normal;
+        }
+
+        .style-selector {
+            display: flex;
+            gap: 10px;
+            align-items: flex-end;
+        }
+
+        .style-selector select {
+            flex: 1;
+        }
+
+        .style-selector button {
+            padding: 12px 20px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+
+        .style-selector button:hover {
+            background: #764ba2;
+        }
+
+        .style-description {
+            background: #f5f5f5;
+            border-left: 4px solid #667eea;
+            padding: 12px;
+            margin: 10px 0;
+            border-radius: 4px;
+            font-size: 13px;
+            color: #555;
+            min-height: 40px;
+        }
+
+        .style-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 10px;
+        }
+
+        .style-tag {
+            background: #667eea;
+            color: white;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .style-tag button {
+            background: none;
+            border: none;
+            color: white;
+            cursor: pointer;
+            font-size: 16px;
+            padding: 0;
+            line-height: 1;
+        }
+
+        .history-item {
+            background: #f9f9f9;
+            border-left: 4px solid #667eea;
+            padding: 15px;
+            margin-bottom: 15px;
+            border-radius: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .history-info {
+            flex: 1;
+        }
+
+        .history-date {
+            color: #999;
+            font-size: 12px;
+            margin-top: 5px;
+        }
+
+        .history-detail {
+            color: #666;
+            font-size: 13px;
+        }
+
+        .history-button {
+            background: #ff6b6b;
+            color: white;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: all 0.3s;
+        }
+
+        .history-button:hover {
+            background: #ff5252;
+        }
+
+        .save-btn {
+            background: #667eea;
+            color: white;
+            padding: 12px 30px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 14px;
+            transition: all 0.3s;
+            margin-top: 20px;
+        }
+
+        .save-btn:hover {
+            background: #764ba2;
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 30px;
+            color: #999;
+        }
+
+        .empty-state p {
+            font-size: 14px;
+        }
+
+        @media (max-width: 768px) {
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+
+            .profile-header {
+                padding: 20px;
+            }
+
+            .profile-content {
+                padding: 20px;
+            }
+
+            .style-selector {
+                flex-direction: column;
+            }
+
+            .style-selector button {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="profile-container">
+        <div class="profile-header">
+            <h1>🌟 個人設定</h1>
+            <p>管理您的個人資料、風格偏好和推薦歷史紀錄</p>
+        </div>
+
+        <div class="profile-tabs">
+            <button class="profile-tab-btn active" data-tab="personal">👤 個人資料</button>
+            <button class="profile-tab-btn" data-tab="preferences">💫 偏好設定</button>
+            <button class="profile-tab-btn" data-tab="history">📜 推薦歷史</button>
+        </div>
+
+        <div class="profile-content">
+            <!-- 個人資料頁面 -->
+            <div id="personal" class="tab-page active">
+                <div class="form-section">
+                    <h3>👤 基本資訊</h3>
+                    <div class="form-row">
+                        <div class="profile-form-group">
+                            <label>性別</label>
+                            <select id="gender">
+                                <option value="">請選擇</option>
+                                <option value="male">男性</option>
+                                <option value="female">女性</option>
+                                <option value="other">其他</option>
+                            </select>
+                        </div>
+                        <div class="profile-form-group">
+                            <label>身高 (cm)</label>
+                            <input type="number" id="height" placeholder="例如：170">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="profile-form-group">
+                            <label>體重 (kg)</label>
+                            <input type="number" id="weight" placeholder="例如：65">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-section">
+                    <h3>🌡️ 體感偏好</h3>
+                    <div class="radio-group">
+                        <div class="radio-option">
+                            <input type="radio" id="cold" name="thermal" value="cold_sensitive">
+                            <label for="cold">怕冷 (會加件外套)</label>
+                        </div>
+                        <div class="radio-option">
+                            <input type="radio" id="normal" name="thermal" value="normal" checked>
+                            <label for="normal">正常</label>
+                        </div>
+                        <div class="radio-option">
+                            <input type="radio" id="hot" name="thermal" value="heat_sensitive">
+                            <label for="hot">怕熱 (儘量透氣)</label>
+                        </div>
+                    </div>
+                </div>
+
+                <button class="save-btn" onclick="ProfileUI.savePersonalInfo()">💾 儲存個人資料</button>
+            </div>
+
+            <!-- 偏好設定頁面 -->
+            <div id="preferences" class="tab-page">
+                <div class="form-section">
+                    <h3>💫 風格偏好</h3>
+                    <div class="form-row full">
+                        <div class="profile-form-group">
+                            <label>選擇風格</label>
+                            <div class="style-selector">
+                                <select id="style-select" onchange="ProfileUI.showStyleDescription()">
+                                    <option value="">-- 選擇風格 --</option>
+                                    <option value="Minimalist">極簡 (Minimalist)</option>
+                                    <option value="Japanese Cityboy">日系 (Japanese Cityboy)</option>
+                                    <option value="Korean Chic">韓系 (Korean Chic)</option>
+                                    <option value="American Vintage">美式復古 (American Vintage)</option>
+                                    <option value="Streetwear">街頭潮流 (Streetwear)</option>
+                                    <option value="Formal">正裝商務 (Formal)</option>
+                                    <option value="Athleisure">運動休閒 (Athleisure)</option>
+                                    <option value="French Chic">法式慵懶 (French Chic)</option>
+                                    <option value="Y2K">千禧復古 (Y2K)</option>
+                                    <option value="Old Money">老錢風 (Old Money)</option>
+                                    <option value="Bohemian">波西米亞 (Bohemian)</option>
+                                    <option value="Grunge">暗黑搖滾 (Grunge)</option>
+                                    <option value="Techwear">賽博機能 (Techwear)</option>
+                                    <option value="Coquette">甜美少女 (Coquette)</option>
+                                    <option value="Gorpcore">山系戶外 (Gorpcore)</option>
+                                </select>
+                                <button onclick="ProfileUI.addStyle()">新增</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="style-description" id="style-desc">選擇一個風格查看詳細描述</div>
+                    <div class="form-group">
+                        <label>您選擇的風格</label>
+                        <div class="style-list" id="favorite-styles-list">
+                            <!-- 動態生成 -->
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-section">
+                    <h3>🚫 避雷清單</h3>
+                    <div class="form-row full">
+                        <div class="profile-form-group">
+                            <label>不想穿的單品或風格 (用逗號分隔)</label>
+                            <textarea id="dislikes" placeholder="例如：短褲, 涼鞋, 碎花, 露肩..."></textarea>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-section">
+                    <h3>✍️ 自訂描述</h3>
+                    <div class="form-row full">
+                        <div class="profile-form-group">
+                            <label>關於您的風格 (給 AI 的建議)</label>
+                            <textarea id="custom-desc" placeholder="例如：我喜歡寬鬆的版型，經常穿大地色..."></textarea>
+                        </div>
+                    </div>
+                </div>
+
+                <button class="save-btn" onclick="ProfileUI.savePreferences()">💾 儲存偏好設定</button>
+            </div>
+
+            <!-- 推薦歷史頁面 -->
+            <div id="history" class="tab-page">
+                <div class="form-section">
+                    <h3>📜 推薦歷史紀錄</h3>
+                    <div id="history-list">
+                        <div class="empty-state">
+                            <p>暫無推薦記錄</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript -->
+    <script src="/static/js/api.js"></script>
+    <script src="/static/js/app.js"></script>
+    <script src="/static/js/profile.js"></script>
+</body>
+
+</html>

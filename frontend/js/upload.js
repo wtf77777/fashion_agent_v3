@@ -19,6 +19,12 @@ const UploadUI = {
         this.queueCount = document.getElementById('queue-count');
         this.batchArea = document.getElementById('batch-action-area');
         this.batchUploadBtn = document.getElementById('batch-upload-btn');
+        
+        // ✅ 驗證關鍵元素
+        if (!this.fileInput) {
+            console.warn('⚠️ 缺少 file-input 元素');
+            return;
+        }
     },
 
     bindEvents() {

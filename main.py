@@ -14,6 +14,7 @@ from database.supabase_client import SupabaseClient
 from api.ai_service import AIService
 from api.weather_service import WeatherService
 from api.wardrobe_service import WardrobeService
+from api.user_service import UserService
 from database.models import ClothingItem
 
 app = FastAPI()
@@ -31,6 +32,7 @@ supabase_client = SupabaseClient(config.supabase_url, config.supabase_key)
 ai_service = AIService(config.gemini_api_key)
 weather_service = WeatherService(config.weather_api_key)
 wardrobe_service = WardrobeService(supabase_client)
+user_service = UserService(supabase_client)
 
 app.mount("/static", StaticFiles(directory="frontend"), name="static")
 
@@ -244,9 +246,10 @@ async def get_recommendation(
     user_id: str = Form(...),
     city: str = Form(...),
     style: str = Form(""),
-    occasion: str = Form("外出遊玩")
+    occasion: str = Form("外出遊玩"),
+    locked_items: str = Form(default="")  # ✅ 優先級 3：指定單品
 ):
-    """推薦衣搭"""
+    """推薦衣搭 - 支援個人偏好 & 指定單品鎖定"""
     try:
         wardrobe = wardrobe_service.get_wardrobe(user_id)
         if not wardrobe:
@@ -256,11 +259,33 @@ async def get_recommendation(
         if not weather:
             return {"success": False, "message": "無法獲取天氣"}
         
+        # ✅ 新增：取得使用者個人資料
+        user_profile = user_service.get_profile(user_id)
+        
+        # ✅ 優先級 3：解析指定單品
+        locked_item_ids = []
+        if locked_items:
+            try:
+                locked_item_ids = json.loads(locked_items)
+            except:
+                locked_item_ids = []
+        
         recommendation = ai_service.generate_outfit_recommendation(
-            wardrobe, weather, style or "不限", occasion
+            wardrobe, weather, style or "不限", occasion,
+            user_profile=user_profile,  # ✅ 傳入個人資料
+            locked_items=locked_item_ids  # ✅ 傳入指定單品
         )
         if not recommendation:
             return {"success": False, "message": "推薦生成失敗"}
+        
+        # ✅ 新增：儲存歷史紀錄
+        user_service.save_history(
+            user_id=user_id,
+            city=city,
+            occasion=occasion,
+            style=style or "不限",
+            recommendation_data=recommendation
+        )
         
         # ✅ Oreoooooo 修正：因為現在回傳的是結構化資料，不需再手動解析文字
         return {
@@ -296,6 +321,76 @@ async def update_clothing_item(
     except Exception as e:
         print(f"[ERROR] 更新衣物: {str(e)}")
         return {"success": False, "message": str(e)}
+
+# ========== 個人設定 ==========
+
+@app.get("/api/profile")
+async def get_profile(user_id: str):
+    """取得個人資料"""
+    try:
+        profile = user_service.get_profile(user_id)
+        if profile:
+            return {"success": True, "message": "查詢成功", "profile": profile}
+        return {"success": False, "message": "查詢失敗", "profile": None}
+    except Exception as e:
+        print(f"[ERROR] 獲取個人資料: {str(e)}")
+        return {"success": False, "message": "獲取失敗", "profile": None}
+
+@app.post("/api/profile")
+async def update_profile(
+    user_id: str = Form(...),
+    gender: str = Form(None),
+    height: str = Form(None),
+    weight: str = Form(None),
+    favorite_styles: str = Form(None),
+    dislikes: str = Form(None),
+    thermal_preference: str = Form(None),
+    custom_style_desc: str = Form(None)
+):
+    """更新個人資料"""
+    try:
+        profile_data = {}
+        
+        if gender:
+            profile_data['gender'] = gender
+        if height:
+            profile_data['height'] = height
+        if weight:
+            profile_data['weight'] = weight
+        if favorite_styles:
+            profile_data['favorite_styles'] = favorite_styles
+        if dislikes:
+            profile_data['dislikes'] = dislikes
+        if thermal_preference:
+            profile_data['thermal_preference'] = thermal_preference
+        if custom_style_desc:
+            profile_data['custom_style_desc'] = custom_style_desc
+        
+        success, msg = user_service.update_profile(user_id, profile_data)
+        return {"success": success, "message": msg}
+    except Exception as e:
+        print(f"[ERROR] 更新個人資料: {str(e)}")
+        return {"success": False, "message": "更新失敗"}
+
+@app.get("/api/history")
+async def get_history(user_id: str, limit: int = 20):
+    """取得推薦歷史紀錄"""
+    try:
+        history = user_service.get_history(user_id, limit)
+        return {"success": True, "message": "查詢成功", "history": history}
+    except Exception as e:
+        print(f"[ERROR] 獲取歷史紀錄: {str(e)}")
+        return {"success": False, "message": "獲取失敗", "history": []}
+
+@app.post("/api/history/delete")
+async def delete_history(user_id: str = Form(...), history_id: int = Form(...)):
+    """刪除歷史紀錄"""
+    try:
+        success, msg = user_service.delete_history(user_id, history_id)
+        return {"success": success, "message": msg}
+    except Exception as e:
+        print(f"[ERROR] 刪除歷史紀錄: {str(e)}")
+        return {"success": False, "message": "刪除失敗"}
 
 if __name__ == "__main__":
     import uvicorn

@@ -12,6 +12,8 @@
     <link rel="stylesheet" href="/static/css/upload.css">
     <link rel="stylesheet" href="/static/css/wardrobe.css">
     <link rel="stylesheet" href="/static/css/recommendation.css">
+    <!-- ✅ 優先級 3：指定單品 CSS -->
+    <link rel="stylesheet" href="/static/css/anchor-item.css">
 </head>
 
 <body>
@@ -124,6 +126,9 @@
                     <button class="app-tab-btn" data-page="recommendation">
                         💡 今日推薦
                     </button>
+                    <button class="app-tab-btn" data-page="profile">
+                        ⚙️ 個人設定
+                    </button>
                 </div>
 
                 <!-- Upload Page -->
@@ -190,6 +195,9 @@
                         </button>
                         <button id="batch-delete-btn" class="btn btn-secondary">
                             🗑️ 批量刪除
+                        </button>
+                        <button id="batch-cancel-btn" class="btn btn-secondary" style="display: none;">
+                            取消
                         </button>
                     </div>
 
@@ -263,23 +271,175 @@
                                 <small>預設為：外出遊玩</small>
                             </div>
                         </div>
-                        <button id="get-recommendation-btn" class="btn btn-primary btn-large">
-                            ✨ 獲取今日推薦
-                        </button>
+                        <div class="form-row" style="gap: 10px; align-items: flex-end;">
+                            <button id="get-recommendation-btn" class="btn btn-primary btn-large">
+                                ✨ 獲取今日推薦
+                            </button>
+                            <!-- ✅ 優先級 3：指定單品按鈕 -->
+                            <button id="anchor-item-btn" class="btn btn-secondary" style="position: relative;">
+                                🔒 指定單品
+                                <span id="anchor-count-badge" class="anchor-count-badge" style="display: none;">0</span>
+                            </button>
+                        </div>
+
+                        <div id="recommendation-result" class="recommendation-result" style="display: none;">
+                            <h3>🎨 今日穿搭建議</h3>
+                            <div id="recommendation-text" class="recommendation-text"></div>
+
+                            <h3>👔 推薦單品展示</h3>
+                            <div id="recommendation-items" class="recommendation-carousel">
+                                <!-- Items will be loaded here -->
+                            </div>
+                        </div>
                     </div>
 
-                    <div id="recommendation-result" class="recommendation-result" style="display: none;">
-                        <h3>🎨 今日穿搭建議</h3>
-                        <div id="recommendation-text" class="recommendation-text"></div>
+                    
+                </div>
 
-                        <h3>👔 推薦單品展示</h3>
-                        <div id="recommendation-items" class="recommendation-carousel">
-                            <!-- Items will be loaded here -->
+<!-- Profile Page (Refactored to SPA) -->
+                <div id="profile-page" class="page-content">
+                    <div class="profile-container">
+                        <div class="profile-header">
+                            <h1>🌟 個人設定</h1>
+                            <p>管理您的個人資料、風格偏好和推薦歷史紀錄</p>
+                        </div>
+
+                        <div class="profile-tabs">
+                            <button class="profile-tab-btn active" data-tab="personal">👤 個人資料</button>
+                            <button class="profile-tab-btn" data-tab="preferences">💫 偏好設定</button>
+                            <button class="profile-tab-btn" data-tab="history">📜 推薦歷史</button>
+                        </div>
+
+                        <div class="profile-content">
+                            <!-- 個人資料頁面 -->
+                            <div id="personal" class="tab-page active">
+                                <div class="form-section">
+                                    <h3>👤 基本資訊</h3>
+                                    <div class="form-row">
+                                        <div class="profile-form-group">
+                                            <label>性別</label>
+                                            <select id="gender">
+                                                <option value="">請選擇</option>
+                                                <option value="male">男性</option>
+                                                <option value="female">女性</option>
+                                                <option value="other">其他</option>
+                                            </select>
+                                        </div>
+                                        <div class="profile-form-group">
+                                            <label>身高 (cm)</label>
+                                            <input type="number" id="height" placeholder="例如：170">
+                                        </div>
+                                    </div>
+                                    <div class="form-row">
+                                        <div class="profile-form-group">
+                                            <label>體重 (kg)</label>
+                                            <input type="number" id="weight" placeholder="例如：65">
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="form-section">
+                                    <h3>🌡️ 體感偏好</h3>
+                                    <div class="radio-group">
+                                        <div class="radio-option">
+                                            <input type="radio" id="cold" name="thermal" value="cold_sensitive">
+                                            <label for="cold">怕冷 (會加件外套)</label>
+                                        </div>
+                                        <div class="radio-option">
+                                            <input type="radio" id="normal" name="thermal" value="normal" checked>
+                                            <label for="normal">正常</label>
+                                        </div>
+                                        <div class="radio-option">
+                                            <input type="radio" id="hot" name="thermal" value="heat_sensitive">
+                                            <label for="hot">怕熱 (儘量透氣)</label>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <button class="save-btn" onclick="ProfileUI.savePersonalInfo()">💾 儲存個人資料</button>
+                            </div>
+
+                            <!-- 偏好設定頁面 -->
+                            <div id="preferences" class="tab-page">
+                                <div class="form-section">
+                                    <h3>💫 風格偏好</h3>
+                                    <div class="form-row full">
+                                        <div class="profile-form-group">
+                                            <label>選擇風格</label>
+                                            <div class="style-selector">
+                                                <select id="style-select"
+                                                    onchange="ProfileUI.showStyleDescription()">
+                                                    <option value="">-- 選擇風格 --</option>
+                                                    <option value="Minimalist">極簡 (Minimalist)</option>
+                                                    <option value="Japanese Cityboy">日系 (Japanese Cityboy)</option>
+                                                    <option value="Korean Chic">韓系 (Korean Chic)</option>
+                                                    <option value="American Vintage">美式復古 (American Vintage)
+                                                    </option>
+                                                    <option value="Streetwear">街頭潮流 (Streetwear)</option>
+                                                    <option value="Formal">正裝商務 (Formal)</option>
+                                                    <option value="Athleisure">運動休閒 (Athleisure)</option>
+                                                    <option value="French Chic">法式慵懶 (French Chic)</option>
+                                                    <option value="Y2K">千禧復古 (Y2K)</option>
+                                                    <option value="Old Money">老錢風 (Old Money)</option>
+                                                    <option value="Bohemian">波西米亞 (Bohemian)</option>
+                                                    <option value="Grunge">暗黑搖滾 (Grunge)</option>
+                                                    <option value="Techwear">賽博機能 (Techwear)</option>
+                                                    <option value="Coquette">甜美少女 (Coquette)</option>
+                                                    <option value="Gorpcore">山系戶外 (Gorpcore)</option>
+                                                </select>
+                                                <button onclick="ProfileUI.addStyle()">新增</button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="style-description" id="style-desc">選擇一個風格查看詳細描述</div>
+                                    <div class="form-group">
+                                        <label>您選擇的風格</label>
+                                        <div class="style-list" id="favorite-styles-list">
+                                            <!-- 動態生成 -->
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="form-section">
+                                    <h3>🚫 避雷清單</h3>
+                                    <div class="form-row full">
+                                        <div class="profile-form-group">
+                                            <label>不想穿的單品或風格 (用逗號分隔)</label>
+                                            <textarea id="dislikes" placeholder="例如：短褲, 涼鞋, 碎花, 露肩..."></textarea>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="form-section">
+                                    <h3>✍️ 自訂描述</h3>
+                                    <div class="form-row full">
+                                        <div class="profile-form-group">
+                                            <label>關於您的風格 (給 AI 的建議)</label>
+                                            <textarea id="custom-desc"
+                                                placeholder="例如：我喜歡寬鬆的版型，經常穿大地色..."></textarea>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <button class="save-btn" onclick="ProfileUI.savePreferences()">💾 儲存偏好設定</button>
+                            </div>
+
+                            <!-- 推薦歷史頁面 -->
+                            <div id="history" class="tab-page">
+                                <div class="form-section">
+                                    <h3>📜 推薦歷史紀錄</h3>
+                                    <div id="history-list">
+                                        <div class="empty-state">
+                                            <p>暫無推薦記錄</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
+
             </div>
-        </div>
     </main>
 
     <!-- Scroll to Top Button -->
@@ -337,12 +497,34 @@
         </div>
     </div>
 
+    <!-- ✅ 優先級 3：指定單品 Modal -->
+    <div id="anchor-modal" class="anchor-modal">
+        <div class="anchor-modal-content">
+            <div class="anchor-modal-header">
+                <h3 class="anchor-modal-title">🔒 指定今日單品</h3>
+                <button class="anchor-modal-close" type="button">&times;</button>
+            </div>
+
+            <div id="anchor-wardrobe-list" class="anchor-wardrobe-list">
+                <!-- 衣櫥單品卡片會在這裡渲染 -->
+            </div>
+
+            <div class="anchor-modal-footer">
+                <button class="anchor-cancel-btn" type="button" onclick="AnchorItemUI.closeModal()">取消</button>
+                <button id="anchor-confirm-btn" class="anchor-confirm-btn" type="button">✅ 確認指定</button>
+            </div>
+        </div>
+    </div>
+
     <!-- JavaScript -->
     <script src="https://cdn.jsdelivr.net/npm/heic2any@0.0.4/dist/heic2any.min.js"></script>
     <script src="/static/js/api.js"></script>
     <script src="/static/js/upload.js"></script>
     <script src="/static/js/wardrobe.js"></script>
     <script src="/static/js/recommendation.js"></script>
+    <!-- ✅ 優先級 3：指定單品 & 導購連結 JS -->
+    <script src="/static/js/anchor-item.js"></script>
+    <script src="/static/js/profile.js"></script>
     <script src="/static/js/app.js"></script>
 </body>
 

@@ -14,6 +14,7 @@ const WardrobeUI = {
     bindEvents() {
         const refreshBtn = document.getElementById('refresh-wardrobe-btn');
         const deleteBtn = document.getElementById('batch-delete-btn');
+        const cancelBtn = document.getElementById('batch-cancel-btn');
 
         if (refreshBtn) {
             refreshBtn.addEventListener('click', () => {
@@ -26,6 +27,13 @@ const WardrobeUI = {
             deleteBtn.addEventListener('click', () => {
                 console.log('🗑️ 用戶點擊批量刪除按鈕');
                 this.toggleBatchDeleteMode();
+            });
+        }
+
+        if (cancelBtn) {
+            cancelBtn.addEventListener('click', () => {
+                console.log('🚫 用戶點擊取消批量刪除');
+                this.cancelBatchDelete();
             });
         }
 
@@ -234,7 +242,20 @@ const WardrobeUI = {
         card.className = 'wardrobe-item';
         card.dataset.itemId = item.id;
         // ✅ 點擊卡片觸發編輯 Modal (強制使用 WardrobeUI 引用)
-        card.onclick = () => WardrobeUI.openEditModal(item.id);
+        if (!this.isBatchDeleteMode) {
+            card.onclick = () => WardrobeUI.openEditModal(item.id);
+        } else {
+            card.onclick = (event) => {
+                if (event.target.closest('.item-checkbox')) {
+                    return;
+                }
+                WardrobeUI.toggleItemSelection(item.id);
+                const checkbox = document.getElementById(`check-${item.id}`);
+                if (checkbox) {
+                    checkbox.checked = WardrobeUI.selectedItems.has(item.id);
+                }
+            };
+        }
 
 
         let checkboxHTML = '';
@@ -290,34 +311,20 @@ const WardrobeUI = {
     },
 
     toggleBatchDeleteMode() {
-        this.isBatchDeleteMode = !this.isBatchDeleteMode;
-
-        const btn = document.getElementById('batch-delete-btn');
-        if (!btn) {
-            console.error('❌ batch-delete-btn 不存在');
+        if (!this.isBatchDeleteMode) {
+            this.enterBatchDeleteMode();
             return;
         }
 
-        if (this.isBatchDeleteMode) {
-            btn.textContent = '✅ 完成選擇';
-            btn.classList.add('btn-primary');
-            btn.classList.remove('btn-secondary');
-            this.selectedItems.clear();
-            console.log('📝 進入批量刪除模式');
-        } else {
-            btn.textContent = '🗑️ 批量刪除';
-            btn.classList.remove('btn-primary');
-            btn.classList.add('btn-secondary');
-
-            if (this.selectedItems.size > 0) {
-                console.log(`🗑️ 要刪除 ${this.selectedItems.size} 件衣物`);
-                this.executeBatchDelete();
-            } else {
-                console.log('ℹ️ 未選擇任何衣物');
+        if (this.selectedItems.size === 0) {
+            if (typeof Toast !== 'undefined') {
+                Toast.warning('請先選擇要刪除的衣物');
             }
+            return;
         }
 
-        this.renderWardrobe();
+        console.log(`🗑️ 要刪除 ${this.selectedItems.size} 件衣物`);
+        this.executeBatchDelete();
     },
 
     toggleItemSelection(itemId) {
@@ -327,14 +334,7 @@ const WardrobeUI = {
             this.selectedItems.add(itemId);
         }
 
-        const btn = document.getElementById('batch-delete-btn');
-        if (!btn) return;
-
-        if (this.selectedItems.size > 0) {
-            btn.textContent = `🗑️ 刪除選中的 ${this.selectedItems.size} 件`;
-        } else {
-            btn.textContent = '✅ 完成選擇';
-        }
+        this.updateBatchActionButtons();
     },
 
     async deleteItem(itemId) {
@@ -369,9 +369,6 @@ const WardrobeUI = {
         }
 
         if (!confirm(`確定要刪除選中的 ${this.selectedItems.size} 件衣服嗎？`)) {
-            this.selectedItems.clear();
-            this.isBatchDeleteMode = false;
-            this.renderWardrobe();
             return;
         }
 
@@ -388,8 +385,10 @@ const WardrobeUI = {
                     Toast.warning(`⚠️ ${result.fail_count} 件刪除失敗`);
                 }
 
-                await this.loadWardrobe();
+                this.isBatchDeleteMode = false;
                 this.selectedItems.clear();
+                this.updateBatchActionButtons();
+                await this.loadWardrobe();
             } else {
                 Toast.error('批量刪除失敗');
             }
@@ -401,8 +400,46 @@ const WardrobeUI = {
         }
     },
 
+    enterBatchDeleteMode() {
+        this.isBatchDeleteMode = true;
+        this.selectedItems.clear();
+        this.updateBatchActionButtons();
+        this.renderWardrobe();
+        console.log('📝 進入批量刪除模式');
+    },
+
+    cancelBatchDelete() {
+        this.isBatchDeleteMode = false;
+        this.selectedItems.clear();
+        this.updateBatchActionButtons();
+        this.renderWardrobe();
+        console.log('✅ 取消批量刪除模式');
+    },
+
+    updateBatchActionButtons() {
+        const deleteBtn = document.getElementById('batch-delete-btn');
+        const cancelBtn = document.getElementById('batch-cancel-btn');
+        if (!deleteBtn) return;
+
+        if (this.isBatchDeleteMode) {
+            deleteBtn.textContent = `🗑️ 刪除選中的 ${this.selectedItems.size} 件`;
+            deleteBtn.classList.add('btn-primary');
+            deleteBtn.classList.remove('btn-secondary');
+            if (cancelBtn) cancelBtn.style.display = 'inline-flex';
+        } else {
+            deleteBtn.textContent = '🗑️ 批量刪除';
+            deleteBtn.classList.remove('btn-primary');
+            deleteBtn.classList.add('btn-secondary');
+            if (cancelBtn) cancelBtn.style.display = 'none';
+        }
+    },
+
     // ✅ Oreoooooo 新增: 編輯 Modal 控制
     openEditModal(itemId) {
+        if (this.isBatchDeleteMode) {
+            return;
+        }
+
         const item = this.items.find(i => i.id === itemId);
         if (!item) {
             console.error('找不到衣物 ID:', itemId);

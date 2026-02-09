@@ -11,9 +11,12 @@ class RecommendationEngine:
         
     def recommend(
         self, wardrobe: List[ClothingItem], weather: WeatherData, occasion: str, 
-        user_gender: str = "中性", target_style: Optional[str] = None, force_outer: bool = False
+        user_gender: str = "中性", target_style: Optional[str] = None, force_outer: bool = False,
+        used_items: Optional[List[int]] = None
     ) -> List[Dict]:
-        """核心推薦 - 防止長袖配短褲版"""
+        """核心推薦 - 防止長袖配短褲版 + 軟扣分機制避免重複推薦"""
+        if used_items is None:
+            used_items = []
         valid_items = self._pre_filter(wardrobe, weather, occasion, user_gender)
         
         tops = [i for i in valid_items if i.category == "上衣"]
@@ -44,7 +47,7 @@ class RecommendationEngine:
                     if o: outfit_items.append(o)
                 
                 outfit = {"items": outfit_items, "score": 0, "reasons": [], "type": "2-piece"}
-                self._score_outfit(outfit, weather, target_style)
+                self._score_outfit(outfit, weather, target_style, used_items)
                 candidates.append(outfit)
 
         if not candidates: return []
@@ -68,7 +71,8 @@ class RecommendationEngine:
             filtered.append(item)
         return filtered
 
-    def _score_outfit(self, outfit: Dict, weather: WeatherData, target_style: str):
+    def _score_outfit(self, outfit: Dict, weather: WeatherData, target_style: str, used_items: Optional[List[int]] = None, penalty_amount: int = 20):
+        """計算服裝配對分數，支援軟扣分機制"""
         score = 70
         items = outfit["items"]
         
@@ -80,6 +84,12 @@ class RecommendationEngine:
             for item in items:
                 if target_style.lower() in str(item.name).lower():
                     score += 15; break
+        
+        # ✅ 軟扣分機制：若該單品已在前面被使用，扣分
+        if used_items:
+            for item in items:
+                if hasattr(item, 'id') and item.id in used_items:
+                    score -= penalty_amount  # 扣分，但若分數高仍會被選中
             
         outfit["score"] = score
 

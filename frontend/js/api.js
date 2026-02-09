@@ -141,7 +141,7 @@ const API = {
     },
 
     // ========== 推薦 API ==========
-    async getRecommendation(city, style, occasion) {
+    async getRecommendation(city, style, occasion, lockedItemIds = []) {
         const user = AppState.getUser();
 
         // ✅ 改這裡：驗證 user_id
@@ -154,6 +154,11 @@ const API = {
         formData.append('city', city);
         formData.append('style', style || '不限定風格');
         formData.append('occasion', occasion || '外出遊玩');
+        
+        // ✅ 優先級 3：支持鎖定單品
+        if (lockedItemIds && lockedItemIds.length > 0) {
+            formData.append('locked_items', JSON.stringify(lockedItemIds));
+        }
 
         const response = await fetch(`${API_BASE_URL}/api/recommendation`, {
             method: 'POST',
@@ -187,6 +192,55 @@ const API = {
             throw new Error(`HTTP ${response.status}`);
         }
 
+        return response.json();
+    },
+
+    // ========== 個人設定 API ==========
+    async getProfile(user_id) {
+        const response = await fetch(`${API_BASE_URL}/api/profile?user_id=${encodeURIComponent(user_id)}`);
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        return response.json();
+    },
+
+    async updateProfile(user_id, gender, height, weight, favorite_styles, dislikes, thermal_preference, custom_style_desc) {
+        const formData = new FormData();
+        formData.append('user_id', user_id);
+        if (gender) formData.append('gender', gender);
+        if (height) formData.append('height', height);
+        if (weight) formData.append('weight', weight);
+        if (favorite_styles) formData.append('favorite_styles', favorite_styles);
+        if (dislikes) formData.append('dislikes', dislikes);
+        if (thermal_preference) formData.append('thermal_preference', thermal_preference);
+        if (custom_style_desc) formData.append('custom_style_desc', custom_style_desc);
+
+        const response = await fetch(`${API_BASE_URL}/api/profile`, {
+            method: 'POST',
+            body: formData
+        });
+
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        return response.json();
+    },
+
+    async getHistory(user_id, limit = 20) {
+        const response = await fetch(
+            `${API_BASE_URL}/api/history?user_id=${encodeURIComponent(user_id)}&limit=${limit}`
+        );
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        return response.json();
+    },
+
+    async deleteHistory(user_id, history_id) {
+        const formData = new FormData();
+        formData.append('user_id', user_id);
+        formData.append('history_id', history_id);
+
+        const response = await fetch(`${API_BASE_URL}/api/history/delete`, {
+            method: 'POST',
+            body: formData
+        });
+
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
         return response.json();
     }
 };

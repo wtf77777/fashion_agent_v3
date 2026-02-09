@@ -1,0 +1,317 @@
+/* ========== 指定單品鎖定功能樣式 ========== */
+.anchor-modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.6);
+    z-index: 1000;
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+}
+
+.anchor-modal-content {
+    background: white;
+    border-radius: 12px;
+    padding: 30px;
+    max-width: 600px;
+    width: 100%;
+    max-height: 80vh;
+    overflow-y: auto;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    animation: slideUp 0.3s ease-out;
+}
+
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.anchor-modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    border-bottom: 2px solid #f0f0f0;
+    padding-bottom: 15px;
+}
+
+.anchor-modal-title {
+    font-size: 20px;
+    font-weight: 600;
+    color: #333;
+}
+
+.anchor-modal-close {
+    background: none;
+    border: none;
+    font-size: 24px;
+    cursor: pointer;
+    color: #666;
+    transition: color 0.2s;
+}
+
+.anchor-modal-close:hover {
+    color: #333;
+}
+
+.anchor-wardrobe-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 12px;
+    margin: 20px 0;
+    max-height: 400px;
+    overflow-y: auto;
+    padding: 10px 0;
+}
+
+.anchor-item-card {
+    cursor: pointer;
+    border: 2px solid #e0e0e0;
+    border-radius: 8px;
+    overflow: hidden;
+    transition: all 0.3s;
+    position: relative;
+}
+
+.anchor-item-card:hover {
+    border-color: #666;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.anchor-item-card.selected {
+    border-color: #4CAF50;
+    background: #f1f8f4;
+    box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.2);
+}
+
+.anchor-item-card img {
+    width: 100%;
+    height: 140px;
+    object-fit: cover;
+    display: block;
+}
+
+.anchor-item-card::after {
+    content: '✓';
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    width: 24px;
+    height: 24px;
+    background: #4CAF50;
+    color: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    opacity: 0;
+    transition: opacity 0.3s;
+}
+
+.anchor-item-card.selected::after {
+    opacity: 1;
+}
+
+.anchor-item-info {
+    padding: 10px;
+    background: #fff;
+    font-size: 12px;
+}
+
+.anchor-item-info strong {
+    display: block;
+    margin-bottom: 6px;
+    color: #333;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.anchor-item-meta {
+    display: flex;
+    gap: 4px;
+    flex-wrap: wrap;
+}
+
+.anchor-item-meta .tag {
+    display: inline-block;
+    background: #f0f0f0;
+    padding: 2px 6px;
+    border-radius: 3px;
+    color: #666;
+    font-size: 10px;
+}
+
+.anchor-modal-footer {
+    display: flex;
+    gap: 10px;
+    margin-top: 20px;
+    justify-content: flex-end;
+    border-top: 2px solid #f0f0f0;
+    padding-top: 15px;
+}
+
+.anchor-confirm-btn, .anchor-cancel-btn {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    transition: all 0.3s;
+}
+
+.anchor-confirm-btn {
+    background: #4CAF50;
+    color: white;
+}
+
+.anchor-confirm-btn:hover {
+    background: #45a049;
+    transform: scale(1.02);
+}
+
+.anchor-cancel-btn {
+    background: #f0f0f0;
+    color: #333;
+}
+
+.anchor-cancel-btn:hover {
+    background: #e0e0e0;
+}
+
+.anchor-count-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    background: #4CAF50;
+    color: white;
+    border-radius: 50%;
+    font-size: 12px;
+    font-weight: bold;
+    margin-left: 8px;
+}
+
+/* ========== 導購連結樣式 ========== */
+.shopping-links {
+    background: linear-gradient(135deg, #fff5f7 0%, #fff0f5 100%);
+    border-left: 4px solid #E91E63;
+    padding: 15px;
+    border-radius: 6px;
+    margin-top: 15px;
+}
+
+.shopping-links p {
+    margin: 0 0 12px 0;
+    font-weight: 600;
+    color: #333;
+}
+
+.shopping-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.shop-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 8px 14px;
+    border-radius: 5px;
+    text-decoration: none;
+    font-size: 12px;
+    font-weight: 500;
+    transition: all 0.3s;
+    color: white;
+    border: none;
+    cursor: pointer;
+}
+
+.shop-btn.shopee {
+    background: linear-gradient(135deg, #EE3333 0%, #FF5555 100%);
+}
+
+.shop-btn.shopee:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(238, 51, 51, 0.3);
+}
+
+.shop-btn.google {
+    background: linear-gradient(135deg, #4285F4 0%, #6CA6FF 100%);
+}
+
+.shop-btn.google:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(66, 133, 244, 0.3);
+}
+
+.shop-btn.uniqlo {
+    background: linear-gradient(135deg, #E60012 0%, #FF3333 100%);
+}
+
+.shop-btn.uniqlo:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(230, 0, 18, 0.3);
+}
+
+.shop-btn.momo {
+    background: linear-gradient(135deg, #FF6B6B 0%, #FF8E8E 100%);
+}
+
+.shop-btn.momo:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(255, 107, 107, 0.3);
+}
+
+.shop-btn.pchome {
+    background: linear-gradient(135deg, #1A1A1A 0%, #333333 100%);
+}
+
+.shop-btn.pchome:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+/* ========== 空狀態 ========== */
+.empty-state {
+    text-align: center;
+    padding: 40px 20px;
+    color: #999;
+    font-size: 14px;
+}
+
+/* ========== 響應式設計 ========== */
+@media (max-width: 600px) {
+    .anchor-modal-content {
+        padding: 20px;
+        border-radius: 8px;
+    }
+
+    .anchor-wardrobe-list {
+        grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+    }
+
+    .shopping-buttons {
+        gap: 6px;
+    }
+
+    .shop-btn {
+        padding: 6px 10px;
+        font-size: 11px;
+    }
+}

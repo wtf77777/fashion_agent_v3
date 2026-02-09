@@ -10,7 +10,7 @@
     --primary-color: #667eea;
     --primary-dark: #764ba2;
     --secondary-color: #f093fb;
-    
+
     /* 灰階 */
     --gray-50: #f9fafb;
     --gray-100: #f3f4f6;
@@ -22,25 +22,25 @@
     --gray-700: #374151;
     --gray-800: #1f2937;
     --gray-900: #111827;
-    
+
     /* 功能色 */
     --success: #10b981;
     --warning: #f59e0b;
     --error: #ef4444;
     --info: #3b82f6;
-    
+
     /* 陰影 */
-    --shadow-sm: 0 1px 2px rgba(0,0,0,0.05);
-    --shadow-md: 0 4px 6px rgba(0,0,0,0.1);
-    --shadow-lg: 0 10px 15px rgba(0,0,0,0.1);
-    --shadow-xl: 0 20px 25px rgba(0,0,0,0.15);
-    
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+    --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.1);
+    --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.1);
+    --shadow-xl: 0 20px 25px rgba(0, 0, 0, 0.15);
+
     /* 圓角 */
     --radius-sm: 0.25rem;
     --radius-md: 0.5rem;
     --radius-lg: 1rem;
     --radius-full: 9999px;
-    
+
     /* 間距 */
     --spacing-xs: 0.5rem;
     --spacing-sm: 1rem;
@@ -50,8 +50,8 @@
 }
 
 body {
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang TC', 
-                 'Microsoft JhengHei', sans-serif;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang TC',
+        'Microsoft JhengHei', sans-serif;
     background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
     min-height: 100vh;
     color: var(--gray-800);
@@ -71,7 +71,7 @@ body {
     left: 0;
     width: 100%;
     height: 100%;
-    background: rgba(0,0,0,0.7);
+    background: rgba(0, 0, 0, 0.7);
     display: none;
     justify-content: center;
     align-items: center;
@@ -86,14 +86,16 @@ body {
 .spinner {
     width: 60px;
     height: 60px;
-    border: 4px solid rgba(255,255,255,0.3);
+    border: 4px solid rgba(255, 255, 255, 0.3);
     border-top-color: white;
     border-radius: 50%;
     animation: spin 1s linear infinite;
 }
 
 @keyframes spin {
-    to { transform: rotate(360deg); }
+    to {
+        transform: rotate(360deg);
+    }
 }
 
 .loading-overlay p {
@@ -350,10 +352,22 @@ body {
 .app-tab-btn.active {
     background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
     color: white;
+    padding: 12px 20px;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 600;
+    color: #999;
 }
 
 .app-tab-btn:hover:not(.active) {
     background: var(--gray-100);
+}
+
+.app-tab-btn.active {
+    color: white;
+    background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
 }
 
 /* ========== Page Content ========== */
@@ -469,25 +483,25 @@ body {
         flex-direction: column;
         gap: var(--spacing-sm);
     }
-    
+
     .weather-content {
         flex-direction: column;
         gap: var(--spacing-md);
     }
-    
+
     .weather-metrics {
         width: 100%;
         justify-content: space-around;
     }
-    
+
     .app-tabs {
         flex-direction: column;
     }
-    
+
     .auth-container {
         margin: var(--spacing-md);
     }
-    
+
     .scroll-top-btn {
         width: 50px;
         height: 50px;
@@ -495,10 +509,323 @@ body {
         bottom: 15px;
         right: 15px;
     }
-    
+
     .toast {
         min-width: auto;
         right: 10px;
         left: 10px;
+    }
+}
+
+/* ========== Profile Page Styles ========== */
+.profile-container {
+    max-width: 1000px;
+    margin: 0 auto;
+}
+
+.profile-header {
+    background: white;
+    border-radius: 16px;
+    padding: 30px;
+    margin-bottom: 30px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+}
+
+.profile-header h1 {
+    color: #333;
+    font-size: 28px;
+    margin-bottom: 10px;
+}
+
+.profile-header p {
+    color: #666;
+    font-size: 14px;
+}
+
+.profile-tabs {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+    border-bottom: 2px solid #eee;
+}
+
+.profile-content {
+    background: white;
+    border-radius: 16px;
+    padding: 30px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+}
+
+.profile-tab-btn {
+    padding: 12px 20px;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 600;
+    color: #999;
+    transition: all 0.3s;
+    position: relative;
+}
+
+.profile-tab-btn.active {
+    color: #667eea;
+}
+
+.profile-tab-btn.active::after {
+    content: '';
+    position: absolute;
+    bottom: -2px;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: #667eea;
+}
+
+.tab-page {
+    display: none;
+}
+
+.tab-page.active {
+    display: block;
+    animation: fadeIn 0.3s;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.form-section {
+    margin-bottom: 30px;
+}
+
+.form-section h3 {
+    color: #333;
+    font-size: 18px;
+    margin-bottom: 15px;
+    padding-bottom: 10px;
+    border-bottom: 2px solid #667eea;
+}
+
+.form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    margin-bottom: 20px;
+}
+
+.form-row.full {
+    grid-template-columns: 1fr;
+}
+
+.profile-form-group {
+    display: flex;
+    flex-direction: column;
+}
+
+.profile-form-group label {
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 8px;
+    font-size: 14px;
+}
+
+.profile-form-group input,
+.profile-form-group select,
+.profile-form-group textarea {
+    padding: 12px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    font-size: 14px;
+    font-family: inherit;
+    transition: all 0.3s;
+    width: 100%;
+}
+
+.profile-form-group input:focus,
+.profile-form-group select:focus,
+.profile-form-group textarea:focus {
+    outline: none;
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.profile-form-group textarea {
+    min-height: 100px;
+    resize: vertical;
+}
+
+.radio-group {
+    display: flex;
+    gap: 20px;
+    margin-top: 10px;
+}
+
+.radio-option {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.radio-option input[type="radio"] {
+    cursor: pointer;
+    width: 18px;
+    height: 18px;
+}
+
+.radio-option label {
+    margin: 0;
+    cursor: pointer;
+    font-weight: normal;
+}
+
+.style-selector {
+    display: flex;
+    gap: 10px;
+    align-items: flex-end;
+}
+
+.style-selector select {
+    flex: 1;
+}
+
+.style-selector button {
+    padding: 12px 20px;
+    background: #667eea;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: all 0.3s;
+}
+
+.style-selector button:hover {
+    background: #764ba2;
+}
+
+.style-description {
+    background: #f5f5f5;
+    border-left: 4px solid #667eea;
+    padding: 12px;
+    margin: 10px 0;
+    border-radius: 4px;
+    font-size: 13px;
+    color: #555;
+    min-height: 40px;
+}
+
+.style-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 10px;
+}
+
+.style-tag {
+    background: #667eea;
+    color: white;
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-size: 12px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.style-tag button {
+    background: none;
+    border: none;
+    color: white;
+    cursor: pointer;
+    font-size: 16px;
+    padding: 0;
+    line-height: 1;
+}
+
+.history-item {
+    background: #f9f9f9;
+    border-left: 4px solid #667eea;
+    padding: 15px;
+    margin-bottom: 15px;
+    border-radius: 8px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.history-info {
+    flex: 1;
+}
+
+.history-date {
+    color: #999;
+    font-size: 12px;
+    margin-top: 5px;
+}
+
+.history-detail {
+    color: #666;
+    font-size: 13px;
+}
+
+.history-button {
+    background: #ff6b6b;
+    color: white;
+    border: none;
+    padding: 8px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 12px;
+    transition: all 0.3s;
+}
+
+.history-button:hover {
+    background: #ff5252;
+}
+
+.save-btn {
+    background: #667eea;
+    color: white;
+    padding: 12px 30px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 14px;
+    transition: all 0.3s;
+    margin-top: 20px;
+}
+
+.save-btn:hover {
+    background: #764ba2;
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}
+
+.empty-state {
+    text-align: center;
+    padding: 30px;
+    color: #999;
+}
+
+.empty-state p {
+    font-size: 14px;
+}
+
+@media (max-width: 768px) {
+    .style-selector {
+        flex-direction: column;
+    }
+
+    .style-selector button {
+        width: 100%;
     }
 }
