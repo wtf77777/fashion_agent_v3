@@ -124,19 +124,63 @@ class WeatherService:
             
             # 提取溫度和天氣描述
             temp = float(valid_weather_element.get('AirTemperature', 0))
-            humidity = float(valid_weather_element.get('RelativeHumidity', 0))
+            try:
+                humidity_raw = valid_weather_element.get('RelativeHumidity', -99)
+                humidity = float(humidity_raw)
+            except Exception:
+                humidity = -99.0
+            # 濕度防呆：缺值或異常時給預設 60%
+            if humidity < 0 or humidity > 100:
+                humidity = 60.0
+
+            # 風速（可能不存在）
+            wind_speed = None
+            for key in ["WindSpeed", "WindSpeedObs", "WindSpeed10M"]:
+                if key in valid_weather_element:
+                    try:
+                        wind_speed = float(valid_weather_element.get(key))
+                    except Exception:
+                        wind_speed = None
+                    break
+
             weather_desc = valid_weather_element.get('Weather', '晴')
-            
             if weather_desc == '-99':
                 weather_desc = '多雲'
             
-            # 計算體感溫度
-            if temp > 26 and humidity > 60:
+            # 體感溫度計算（簡版 Heat Index / 風寒）
+            def heat_index_c(t, rh):
+                # NOAA Heat Index 改寫攝氏版本
+                return (
+                    -8.784695 +
+                    1.61139411 * t +
+                    2.338549 * rh -
+                    0.14611605 * t * rh -
+                    0.012308094 * (t ** 2) -
+                    0.016424828 * (rh ** 2) +
+                    0.002211732 * (t ** 2) * rh +
+                    0.00072546 * t * (rh ** 2) -
+                    0.000003582 * (t ** 2) * (rh ** 2)
+                )
+
+            def wind_chill_c(t, wind_ms):
+                # 公式需要 km/h
+                v = wind_ms * 3.6
+                return 13.12 + 0.6215 * t - 11.37 * (v ** 0.16) + 0.3965 * t * (v ** 0.16)
+
+            feels_like = temp
+            if temp >= 27 and humidity >= 40:
+                hi = heat_index_c(temp, humidity)
+                # Heat Index 不應低於實際溫度
+                feels_like = max(temp, hi)
+            elif temp <= 10:
+                if wind_speed and wind_speed > 0:
+                    wc = wind_chill_c(temp, wind_speed)
+                    feels_like = min(temp, wc)  # 風寒不應高於實測
+                else:
+                    feels_like = temp - 2
+            elif temp > 26 and humidity > 60:
+                # 保留原本輕量加成邏輯（高濕但未達 27 度）
                 feels_like = temp + ((humidity - 60) / 100) * 3
-            elif temp < 10:
-                feels_like = temp - 2
-            else:
-                feels_like = temp
             
             weather_data = WeatherData(
                 temp=temp,

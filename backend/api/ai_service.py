@@ -280,6 +280,9 @@ class AIService:
                     locked_desc = "、".join([f"{item.name}({item.color})" for item in locked_wardrobe])
                     locked_item_details = f"\n【指定今日單品】必須包含: {locked_desc}"
             
+            # 使用體感溫度優先判斷
+            temp_for_logic = getattr(weather, "feels_like", weather.temp)
+
             analysis_prompt = f"""
 【使用者資料】
 性別/身形: {user_gender} / {user_height_str} / {user_weight_str}
@@ -291,7 +294,7 @@ class AIService:
 【本次需求】
 場合："{occasion}"
 風格偏好：{style}
-天氣：{weather.temp}度 ({weather.desc})
+天氣：{temp_for_logic}度 ({weather.desc})
 
 ---
 ## 2) 穿搭推薦情境分析（analysis_prompt）
@@ -362,16 +365,16 @@ class AIService:
                 print("[AI] ⚠️ 場景解析回傳非 JSON，改用預設解析值")
                 analysis = {
                     "normalized_occasion": "日常",
-                    "needs_outer": weather.temp < 22,
+                    "needs_outer": temp_for_logic < 22,
                     "vibe_description": "今天就走舒適俐落的日常穿搭風格。",
                     "parsed_style": style or "日常"
                 }
 
             # ✅ 根據體感偏好調整保暖需求
-            needs_outer = bool(analysis.get("needs_outer", weather.temp < 22))
-            if thermal_preference == "cold_sensitive" and weather.temp < 24:
+            needs_outer = bool(analysis.get("needs_outer", temp_for_logic < 22))
+            if thermal_preference == "cold_sensitive" and temp_for_logic < 24:
                 needs_outer = True  # 強制加外套
-            elif thermal_preference == "heat_sensitive" and weather.temp > 25:
+            elif thermal_preference == "heat_sensitive" and temp_for_logic > 25:
                 needs_outer = False  # 儘量不穿外套
 
             normalized_occasion = analysis.get("normalized_occasion") or "日常"
@@ -451,7 +454,7 @@ class AIService:
 【背景資訊】
 - 性別：{user_gender}
 - 身高體重：{user_height_str} / {user_weight_str}
-- 天氣：{weather.temp}度 / {weather.desc}
+- 天氣：{temp_for_logic}度 / {weather.desc}
 - 場合：{normalized_occasion}
 - 外出目的：{occasion}
 - 體感：{thermal_preference}
