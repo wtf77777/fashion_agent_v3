@@ -178,8 +178,15 @@ class WeatherService:
                     feels_like = min(temp, wc)  # 風寒不應高於實測
                 else:
                     feels_like = temp - 2
+            elif 18 <= temp < 27 and humidity >= 60:
+                # 中溫高濕微調：隨濕度線性加成 0.5~2.5 度
+                add = 0.5 + (min(humidity, 90) - 60) / 30 * 2.0
+                feels_like = temp + add
+            elif 10 < temp < 18 and wind_speed and wind_speed > 2:
+                # 輕度風寒：風速>2 m/s 時扣 1~2 度
+                feels_like = temp - min(2.0, 0.5 + (wind_speed / 5))
             elif temp > 26 and humidity > 60:
-                # 保留原本輕量加成邏輯（高濕但未達 27 度）
+                # 保留原本輕量加成邏輯（高濕但未達 27 度，且未觸發上方中溫段）
                 feels_like = temp + ((humidity - 60) / 100) * 3
             
             weather_data = WeatherData(
