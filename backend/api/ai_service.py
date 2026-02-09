@@ -1,4 +1,4 @@
-"""
+﻿"""
 AI 服務層 - Oreoooooo 終極穩定整合版
 處理所有與 Gemini API 相關的業務邏輯，包含重試機制、高品質 Prompt 與階梯式辨識
 """
@@ -123,21 +123,21 @@ class AIService:
 ]
 
 【風格列表 15】
-1. Minimalist
-2. Japanese Cityboy
-3. Korean Chic
-4. American Vintage
-5. Streetwear
-6. Formal
-7. Athleisure
-8. French Chic
-9. Y2K
-10. Old Money
-11. Bohemian
-12. Grunge / Punk
-13. Techwear
-14. Coquette
-15. Gorpcore
+1. Minimalist(極簡)
+2. Japanese Cityboy(日系寬鬆)
+3. Korean Chic(韓系)
+4. American Vintage(美式復古)
+5. Streetwear(街頭潮流)
+6. Formal(正裝/商務)
+7. Athleisure(運動休閒)
+8. French Chic(法式慵懶)
+9. Y2K(千禧復古)
+10. Old Money(老錢風)
+11. Bohemian(波西米亞)
+12. Grunge / Punk(暗黑搖滾)
+13. Techwear(機能)
+14. Coquette(甜美少女)
+15. Gorpcore(山系戶外)
 
 【規則】
 - 每件必填：name / category / color / style
@@ -536,3 +536,4 @@ class AIService:
                (f"{item.color}{item.category}".lower() in res.replace(' ', '')):
                 recommended_items.append(item)
         return recommended_items
+
